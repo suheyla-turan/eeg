@@ -1,8 +1,5 @@
 import json
 import ssl
-from datetime import datetime, timezone
-
-import requests
 import websocket
 
 from config import *
@@ -11,67 +8,71 @@ from config import *
 class CortexClient:
 
     def __init__(self):
+
         self.ws = None
         self.token = None
         self.session_id = None
         self.headset_id = None
 
+    # -------------------------
+    # Connect
+    # -------------------------
     def connect(self):
+
         print("Cortex API'ye bağlanılıyor...")
+
         self.ws = websocket.create_connection(
             URL,
-            sslopt={"cert_reqs": ssl.CERT_NONE},
+            sslopt={"cert_reqs": ssl.CERT_NONE}
         )
+
         print("Bağlantı başarılı.")
 
+    # -------------------------
+    # Send
+    # -------------------------
     def send(self, data):
+
         self.ws.send(json.dumps(data))
 
+    # -------------------------
+    # Receive
+    # -------------------------
     def receive(self):
+
         return json.loads(self.ws.recv())
 
-    def _post_backend(self, path: str, payload: dict) -> None:
-        try:
-            requests.post(f"{BACKEND_URL}{path}", json=payload, timeout=2)
-        except requests.RequestException as error:
-            print(f"Backend gönderim hatası ({path}): {error}")
-
-    def _notify_device_status(
-        self,
-        connected: bool,
-        message: str,
-    ) -> None:
-        self._post_backend(
-            "/api/device/status",
-            {
-                "connected": connected,
-                "headset_id": self.headset_id,
-                "session_id": self.session_id,
-                "message": message,
-            },
-        )
-
+    # -------------------------
+    # Request Access
+    # -------------------------
     def request_access(self):
+
         request = {
             "id": 1,
             "jsonrpc": "2.0",
             "method": "requestAccess",
             "params": {
                 "clientId": CLIENT_ID,
-                "clientSecret": CLIENT_SECRET,
-            },
+                "clientSecret": CLIENT_SECRET
+            }
         }
 
         self.send(request)
+
         response = self.receive()
+
         print(response)
 
-        if "result" in response and response["result"]["accessGranted"]:
+        if response["result"]["accessGranted"]:
             print("Uygulama erişim izni alındı.")
         else:
-            raise Exception("requestAccess başarısız.")
+            raise Exception("Access reddedildi.")
 
+    # -------------------------
+    # Authorize
+    # -------------------------
     def authorize(self):
+
         request = {
             "id": 2,
             "jsonrpc": "2.0",
@@ -80,40 +81,49 @@ class CortexClient:
                 "clientId": CLIENT_ID,
                 "clientSecret": CLIENT_SECRET,
                 "license": LICENSE,
-                "debit": DEBIT,
-            },
+                "debit": DEBIT
+            }
         }
 
         self.send(request)
+
         response = self.receive()
+
         print(response)
 
-        if "result" in response:
-            self.token = response["result"]["cortexToken"]
-            print("Authorize başarılı.")
-        else:
-            raise Exception("Authorize başarısız.")
+        self.token = response["result"]["cortexToken"]
 
+        print("Authorize başarılı.")
+
+    # -------------------------
+    # Query Headsets
+    # -------------------------
     def query_headsets(self):
+
         request = {
             "id": 3,
             "jsonrpc": "2.0",
             "method": "queryHeadsets",
-            "params": {},
+            "params": {}
         }
 
         self.send(request)
+
         response = self.receive()
+
         print(response)
 
-        if "result" not in response or len(response["result"]) == 0:
-            raise Exception("Headset bulunamadı.")
-
         headset = response["result"][0]
-        self.headset_id = headset["id"]
-        print(f"Headset bulundu : {self.headset_id}")
 
+        self.headset_id = headset["id"]
+
+        print("Headset :", self.headset_id)
+
+    # -------------------------
+    # Create Session
+    # -------------------------
     def create_session(self):
+
         request = {
             "id": 4,
             "jsonrpc": "2.0",
@@ -121,21 +131,25 @@ class CortexClient:
             "params": {
                 "cortexToken": self.token,
                 "headset": self.headset_id,
-                "status": "active",
-            },
+                "status": "active"
+            }
         }
 
         self.send(request)
+
         response = self.receive()
+
         print(response)
 
-        if "result" in response:
-            self.session_id = response["result"]["id"]
-            print(f"Session oluşturuldu : {self.session_id}")
-        else:
-            raise Exception("Session oluşturulamadı.")
+        self.session_id = response["result"]["id"]
 
-    def subscribe_eeg(self):
+        print("Session oluşturuldu.")
+
+    # -------------------------
+    # Subscribe DEV
+    # -------------------------
+    def subscribe_dev(self):
+
         request = {
             "id": 5,
             "jsonrpc": "2.0",
@@ -143,56 +157,77 @@ class CortexClient:
             "params": {
                 "cortexToken": self.token,
                 "session": self.session_id,
-                "streams": ["eeg"],
-            },
+                "streams": ["dev"]
+            }
         }
 
         self.send(request)
+
         response = self.receive()
+
         print(response)
 
-        if "result" in response:
-            print("EEG stream aboneliği başarılı.")
-            self._notify_device_status(True, "EEG verisi alınıyor")
+        result = response["result"]
+
+        if len(result["success"]) > 0:
+
+            print("\nDEV stream bağlandı.\n")
+
         else:
-            raise Exception("EEG stream aboneliği başarısız.")
 
-    def _send_eeg_to_backend(self, eeg_values: list) -> None:
-        numeric_channels = []
+            print(result["failure"])
 
-        for value in eeg_values:
-            try:
-                numeric_channels.append(float(value))
-            except (TypeError, ValueError):
-                continue
-
-        self._post_backend(
-            "/api/eeg",
-            {
-                "channels": numeric_channels,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "raw": {"eeg": eeg_values},
-            },
-        )
-
+    # -------------------------
+    # Listen
+    # -------------------------
     def listen(self):
-        print("\nEEG verileri dinleniyor...\n")
+
+        channels = [
+            "AF3", "F7", "F3", "FC5",
+            "T7", "P7", "O1", "O2",
+            "P8", "T8", "FC6", "F4",
+            "F8", "AF4", "OVERALL"
+        ]
+
+        print("\nVeriler dinleniyor...\n")
 
         while True:
+
             try:
+
                 message = self.receive()
 
-                if "eeg" in message:
-                    eeg_values = message["eeg"]
-                    print("EEG :", eeg_values)
-                    self._send_eeg_to_backend(eeg_values)
+                if "dev" not in message:
+                    continue
+
+                battery = message["dev"][0]
+                signal = message["dev"][1]
+                sensors = message["dev"][2]
+                battery_percent = message["dev"][3]
+
+                print("=" * 60)
+
+                print(f"Batarya      : %{battery_percent}")
+                print(f"Sinyal       : {signal}")
+
+                print()
+
+                for name, value in zip(channels, sensors):
+
+                    print(f"{name:<10}: {value}")
 
             except KeyboardInterrupt:
-                print("\nDinleme durduruldu.")
+
+                print("\nProgram sonlandırıldı.")
+
                 break
 
+    # -------------------------
+    # Disconnect
+    # -------------------------
     def disconnect(self):
+
         if self.ws:
-            self._notify_device_status(False, "Bağlantı kapatıldı")
             self.ws.close()
+
             print("Bağlantı kapatıldı.")

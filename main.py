@@ -17,7 +17,7 @@ def main():
 
         cortex.create_session()
 
-        cortex.subscribe_eeg()
+        cortex.subscribe_dev()
 
         cortex.listen()
 
