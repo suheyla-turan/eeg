@@ -22,6 +22,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
   LiveEegState _live = LiveEegState.disconnected();
   String? _lastError;
   bool _loading = true;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -57,8 +58,41 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
     }
   }
 
+  Future<void> _toggleCollection() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      if (_live.collecting) {
+        await _api.stopCollection();
+      } else {
+        await _api.startCollection();
+      }
+      await _refresh();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _lastError =
+            'Komut gönderilemedi (${EegApiConfig.baseUrl}): $e';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _live.collecting
+                ? 'Durdurulamadı — Python API çalışıyor mu?'
+                : 'Başlatılamadı — Python API çalışıyor mu?',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final collecting = _live.collecting;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -68,25 +102,73 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             children: [
-              const Text(
-                'Canlı EEG Durumu',
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Canlı EEG Durumu',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.text,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Python / Emotiv Cortex üzerinden anlık veri',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: _busy ? null : _toggleCollection,
+                    style: FilledButton.styleFrom(
+                      backgroundColor:
+                          collecting ? AppColors.warning : AppColors.success,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.border,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    icon: _busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(collecting ? Icons.stop : Icons.play_arrow),
+                    label: Text(collecting ? 'Durdur' : 'Başlat'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                collecting
+                    ? 'Python veri topluyor (Cortex aktif)'
+                    : 'Veri toplama kapalı — Başlat ile Python kodunu çalıştır',
                 style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.text,
-                  letterSpacing: -0.3,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: collecting ? AppColors.success : AppColors.textMuted,
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Python / Emotiv Cortex üzerinden anlık veri',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.only(bottom: 14),
@@ -112,6 +194,23 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                 ),
               if (_live.connection == ConnectionStatus.connected)
                 const SizedBox.shrink()
+              else if (!collecting)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F0F3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Başlat’a basınca PC’deki Python Cortex’e bağlanır ve veri akmaya başlar.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                )
               else if (_lastError == null ||
                   !_lastError!.contains('ulaşılamadı'))
                 Container(

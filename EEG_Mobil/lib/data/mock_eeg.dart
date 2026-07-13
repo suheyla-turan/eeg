@@ -21,6 +21,7 @@ class EmotionScore {
 
 class LiveEegState {
   final ConnectionStatus connection;
+  final bool collecting;
   final int batteryPercent;
   final int sensorCount;
   final Map<String, ContactQuality> contactQuality;
@@ -33,6 +34,7 @@ class LiveEegState {
 
   const LiveEegState({
     required this.connection,
+    this.collecting = false,
     required this.batteryPercent,
     required this.sensorCount,
     required this.contactQuality,
@@ -44,9 +46,10 @@ class LiveEegState {
     this.error,
   });
 
-  factory LiveEegState.disconnected({String? error}) {
+  factory LiveEegState.disconnected({String? error, bool collecting = false}) {
     return LiveEegState(
       connection: ConnectionStatus.disconnected,
+      collecting: collecting,
       batteryPercent: 0,
       sensorCount: 14,
       contactQuality: {for (final id in sensorIds) id: ContactQuality.none},
@@ -78,6 +81,7 @@ class LiveEegState {
 
     return LiveEegState(
       connection: connection,
+      collecting: json['collecting'] as bool? ?? false,
       batteryPercent: (json['battery_percent'] as num?)?.toInt() ?? 0,
       sensorCount: (json['sensor_count'] as num?)?.toInt() ?? 14,
       contactQuality: contactQuality,

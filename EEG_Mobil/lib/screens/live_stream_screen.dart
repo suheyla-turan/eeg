@@ -42,16 +42,17 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
   String? _error;
   int _packetCount = 0;
   DateTime? _lastPacketAt;
-  double? _lastUpdatedAt;
-  bool _paused = false;
+  bool _busy = false;
   bool _fetching = false;
+
+  bool get _collecting => _live.collecting;
 
   @override
   void initState() {
     super.initState();
     _refresh();
     _timer = Timer.periodic(const Duration(milliseconds: 250), (_) {
-      if (!_paused) _refresh();
+      _refresh();
     });
   }
 
@@ -62,9 +63,34 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
     super.dispose();
   }
 
-  void _togglePause() {
-    setState(() => _paused = !_paused);
-    if (!_paused) _refresh();
+  Future<void> _toggleCollection() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      if (_collecting) {
+        await _api.stopCollection();
+      } else {
+        await _api.startCollection();
+      }
+      await _refresh();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Komut gönderilemedi (${EegApiConfig.baseUrl})';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _collecting
+                ? 'Durdurulamadı — Python API çalışıyor mu?'
+                : 'Başlatılamadı — Python API çalışıyor mu?',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   void _clearLog() {
@@ -73,57 +99,37 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
       _log.clear();
       _packetCount = 0;
       _lastPacketAt = null;
-      _lastUpdatedAt = null;
     });
   }
 
-  /// Cortex'ten gerçekten yeni paket geldi mi? (updated_at değişti mi)
-  bool _isFreshPacket(LiveEegState next) {
-    final ts = next.updatedAt;
-    if (ts == null) return false;
-    if (_lastUpdatedAt != null && ts == _lastUpdatedAt) return false;
-
-    // Çok eski timestamp = cihaz artık veri göndermiyor
-    final ageSec = DateTime.now().millisecondsSinceEpoch / 1000.0 - ts;
-    // Emotiv epoch bazen farklı olabilir; absolute age kontrolü yerine
-    // sadece "değişti mi" yeterli. Ek: tüm kanallar 0 ve pil 0 ise
-    // yine de yeni paket sayılabilir (cihaz açık ama temas yok).
-    if (ageSec > 3600 * 24 * 365) {
-      // timestamp epoch uyumsuzluğu — yine de değişimi kabul et
-    }
-    return true;
-  }
-
-  bool _looksStale(LiveEegState state) {
+  /// Cihaz bağlı ve API canlı veri döndürüyor mu?
+  /// Değerler aynı kalsa bile akış devam eder; yalnızca bağlantı kopunca durur.
+  /// Bağlı ve Cortex paketi taze mi? (updated_at yaşı ≤ 3 sn)
+  bool _hasDataFlow(LiveEegState state) {
+    if (state.connection != ConnectionStatus.connected) return false;
     final ts = state.updatedAt;
-    if (ts == null) return true;
-    if (state.connection != ConnectionStatus.connected) return true;
-
-    // updated_at uzun süredir değişmiyorsa (son bilinenle aynı ve >2sn)
-    if (_lastUpdatedAt != null &&
-        ts == _lastUpdatedAt &&
-        _lastPacketAt != null &&
-        DateTime.now().difference(_lastPacketAt!).inSeconds >= 2) {
-      return true;
-    }
-    return false;
+    if (ts == null) return false;
+    final ageSec = DateTime.now().millisecondsSinceEpoch / 1000.0 - ts;
+    // Epoch uyumsuzluğu (çok büyük/negatif) → connection alanına güven
+    if (ageSec.abs() > 3600 * 24) return true;
+    return ageSec <= 3.0;
   }
 
   Future<void> _refresh() async {
-    if (_fetching || _paused) return;
+    if (_fetching) return;
     _fetching = true;
     try {
       final next = await _api.fetchLive();
       if (!mounted) return;
 
-      final isNew = _isFreshPacket(next);
+      final flowing = _hasDataFlow(next);
 
       setState(() {
         _live = next;
         _error = null;
 
-        if (isNew) {
-          _lastUpdatedAt = next.updatedAt;
+        // Değerler değişmese bile bağlıyken her poll bir örnek sayılır
+        if (flowing) {
           _packetCount++;
           final sample = _StreamSample(
             time: DateTime.now(),
@@ -170,8 +176,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
   @override
   Widget build(BuildContext context) {
     final connected = _live.connection == ConnectionStatus.connected;
-    final stale = _looksStale(_live);
-    final streaming = connected && !stale && !_paused;
+    final streaming = connected && _collecting;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -197,7 +202,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                       ),
                       SizedBox(height: 6),
                       Text(
-                        'Yalnızca Cortex’ten gelen yeni paketler sayılır',
+                        'Başlat ile Python veri toplar; Durdur Cortex’i keser',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,
@@ -209,18 +214,29 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(
-                  onPressed: _togglePause,
+                  onPressed: _busy ? null : _toggleCollection,
                   style: FilledButton.styleFrom(
-                    backgroundColor:
-                        _paused ? AppColors.success : AppColors.warning,
+                    backgroundColor: _collecting
+                        ? AppColors.warning
+                        : AppColors.success,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.border,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 12,
                     ),
                   ),
-                  icon: Icon(_paused ? Icons.play_arrow : Icons.pause),
-                  label: Text(_paused ? 'Devam' : 'Durdur'),
+                  icon: _busy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(_collecting ? Icons.stop : Icons.play_arrow),
+                  label: Text(_collecting ? 'Durdur' : 'Başlat'),
                 ),
               ],
             ),
@@ -234,15 +250,15 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  _paused
-                      ? 'Akış duraklatıldı'
+                  !_collecting
+                      ? 'Python durdu — Başlat ile devam'
                       : (streaming
-                          ? 'Canlı paket alınıyor'
-                          : 'Yeni paket yok (cihaz kapalı / bekleniyor)'),
+                          ? 'Canlı veri alınıyor'
+                          : 'Bağlanıyor / cihaz bekleniyor'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: _paused
+                    color: !_collecting
                         ? AppColors.warning
                         : (streaming
                             ? AppColors.success
@@ -265,7 +281,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   style: const TextStyle(fontSize: 13, color: AppColors.danger),
                 ),
               ),
-            if (!_paused && connected && stale)
+            if (_collecting && !connected)
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
@@ -274,7 +290,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
-                  'API açık ama yeni Cortex paketi gelmiyor. Headset kapalı veya bağlantı kopmuş olabilir.',
+                  'Veri akışı yok. Headset kapalı veya bağlantı kopmuş olabilir.',
                   style: TextStyle(fontSize: 13, color: AppColors.warning, height: 1.35),
                 ),
               ),
@@ -284,18 +300,18 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   child: _MiniStat(
                     label: 'Durum',
                     child: StatusPill(
-                      label: _paused
-                          ? 'Duraklatıldı'
+                      label: !_collecting
+                          ? 'Durdu'
                           : (streaming
                               ? 'Akıyor'
-                              : (connected ? 'Bekliyor' : 'Kapalı')),
-                      tone: _paused
+                              : (connected ? 'Bekliyor' : 'Bağlanıyor')),
+                      tone: !_collecting
                           ? StatusTone.warning
                           : (streaming
                               ? StatusTone.success
                               : (connected
                                   ? StatusTone.info
-                                  : StatusTone.danger)),
+                                  : StatusTone.warning)),
                     ),
                   ),
                 ),
@@ -364,8 +380,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             SectionCard(
               title: 'Paket Günlüğü',
               subtitle: _lastPacketAt == null
-                  ? 'Henüz gerçek paket yok'
-                  : 'Son gerçek paket: ${_formatTime(_lastPacketAt!)}',
+                  ? 'Henüz örnek yok'
+                  : 'Son örnek: ${_formatTime(_lastPacketAt!)}',
               child: Container(
                 width: double.infinity,
                 height: 220,
@@ -377,7 +393,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 child: _log.isEmpty
                     ? const Center(
                         child: Text(
-                          'Cortex’ten yeni paket bekleniyor…',
+                          'Veri akışı bekleniyor…',
                           style: TextStyle(color: Colors.white54),
                         ),
                       )

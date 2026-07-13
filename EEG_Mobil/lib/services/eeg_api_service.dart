@@ -52,6 +52,43 @@ class EegApiService {
         HttpException('API unreachable', uri: Uri.parse(EegApiConfig.baseUrl));
   }
 
+  /// Python tarafında Cortex veri toplamayı başlatır.
+  Future<void> startCollection() async {
+    await _postCollection('start');
+  }
+
+  /// Python tarafında Cortex veri toplamayı durdurur.
+  Future<void> stopCollection() async {
+    await _postCollection('stop');
+  }
+
+  Future<void> _postCollection(String action) async {
+    Object? lastError;
+
+    for (final host in EegApiConfig.fallbackHosts) {
+      final uri =
+          Uri.parse('http://$host:${EegApiConfig.port}/collection/$action');
+      try {
+        final response = await _client
+            .post(uri)
+            .timeout(const Duration(seconds: 5));
+        if (response.statusCode != 200) {
+          throw HttpException('API ${response.statusCode}', uri: uri);
+        }
+        EegApiConfig.host = host;
+        return;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    throw lastError ??
+        HttpException(
+          'Collection $action failed',
+          uri: Uri.parse('${EegApiConfig.baseUrl}/collection/$action'),
+        );
+  }
+
   void dispose() {
     _client.close();
   }
