@@ -2,11 +2,20 @@
 EEG canlı veri API'si.
 
 Emotiv Cortex'ten gelen DEV stream'i Flutter uygulamasına sunar.
-Veri toplama Flutter'dan POST /collection/start ve /collection/stop ile kontrol edilir.
+
+Başlangıçta Cortex'e otomatik bağlanır (requestAccess → authorize →
+queryHeadsets → createSession → subscribe DEV). Cihaz durumu (pil, sinyal,
+contact quality) sürekli güncellenir.
+
+Veri toplama (recording/processing) Flutter'dan
+POST /collection/start ve /collection/stop ile kontrol edilir.
+Durdurma Cortex bağlantısını kesmez.
 
 Çalıştırma:
   pip install -r requirements.txt
   python api_server.py
+
+mDNS: http://eegserver.local:8000  (servis: _eeg-api._tcp)
 
 Endpoint'ler:
   GET  /health
@@ -21,15 +30,38 @@ from __future__ import annotations
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from cortex_client import CortexClient
+from mdns_advertise import MdnsAdvertiser
 import live_state
 
-app = FastAPI(title="EEG Live API", version="1.0.0")
+mdns = MdnsAdvertiser(port=8000)
+cortex = CortexClient()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    live_state.set_collecting(False)
+    live_state.set_disconnected("Cortex'e bağlanılıyor…")
+    print("API hazır. Cortex'e otomatik bağlanılıyor (cihaz durumu / DEV stream).")
+    try:
+        await mdns.start()
+    except Exception as exc:
+        print(f"mDNS başlatılamadı (API yine de çalışır): {exc!r}")
+    # Cihaz izleme hemen başlar; collecting ayrı (Başlat butonu)
+    cortex.start_background()
+    yield
+    await mdns.stop()
+    live_state.set_collecting(False)
+    cortex.stop()
+
+
+app = FastAPI(title="EEG Live API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,22 +70,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-cortex = CortexClient()
-
-
-@app.on_event("startup")
-def on_startup():
-    # Cortex otomatik başlamaz — Flutter Başlat butonu bekler
-    print("API hazır. Veri toplama için POST /collection/start bekleniyor.")
-    live_state.set_collecting(False)
-    live_state.set_disconnected("Veri toplama başlatılmadı")
-
-
-@app.on_event("shutdown")
-def on_shutdown():
-    cortex.stop()
-
 
 @app.get("/health")
 def health():
@@ -76,7 +92,7 @@ def live():
 def collection_status():
     state = live_state.snapshot()
     return {
-        "collecting": state.get("collecting", False) or cortex.is_running,
+        "collecting": state.get("collecting", False),
         "running": cortex.is_running,
         "connection": state["connection"],
     }
@@ -84,16 +100,25 @@ def collection_status():
 
 @app.post("/collection/start")
 def collection_start():
-    """Flutter Başlat / Devam — Cortex veri toplamayı başlatır."""
-    if cortex.is_running:
+    """Flutter Başlat — yalnızca EEG veri işlemeyi / kaydı açar.
+
+    Cortex oturumu ve DEV stream zaten açık kalır.
+    """
+    if not cortex.is_running:
+        print("Cortex henüz çalışmıyor — bağlantı başlatılıyor.")
+        cortex.start_background()
+
+    state = live_state.snapshot()
+    if state.get("collecting"):
         return {
             "ok": True,
             "collecting": True,
-            "message": "Zaten çalışıyor",
-            "connection": live_state.snapshot()["connection"],
+            "message": "Veri toplama zaten açık",
+            "connection": state["connection"],
         }
-    print("Flutter'dan veri toplama başlatıldı.")
-    cortex.start_background()
+
+    print("Flutter'dan veri toplama (EEG işleme) başlatıldı.")
+    live_state.set_collecting(True)
     return {
         "ok": True,
         "collecting": True,
@@ -104,15 +129,17 @@ def collection_start():
 
 @app.post("/collection/stop")
 def collection_stop():
-    """Flutter Durdur — Cortex bağlantısını keser, veri almayı durdurur."""
-    print("Flutter'dan veri toplama durduruldu.")
-    cortex.stop()
-    live_state.set_disconnected("Flutter tarafından durduruldu")
+    """Flutter Durdur — yalnızca veri işlemeyi kapatır.
+
+    Cortex bağlantısı, session ve DEV stream açık kalır.
+    """
+    print("Flutter'dan veri toplama durduruldu (cihaz bağlantısı korunuyor).")
+    live_state.set_collecting(False)
     return {
         "ok": True,
         "collecting": False,
         "message": "Veri toplama durduruldu",
-        "connection": "disconnected",
+        "connection": live_state.snapshot()["connection"],
     }
 
 

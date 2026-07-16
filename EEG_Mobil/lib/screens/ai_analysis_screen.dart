@@ -52,7 +52,7 @@ class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
       setState(() {
         _live = offline;
         _analysis = EmotionAnalyzer.analyze(offline);
-        _error = 'Canlı veri yok — ${EegApiConfig.baseUrl}';
+        _error = 'Canlı veri yok — ${EegApiConfig.displayUrl}';
       });
     }
   }

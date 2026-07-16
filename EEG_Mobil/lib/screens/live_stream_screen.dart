@@ -76,7 +76,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Komut gönderilemedi (${EegApiConfig.baseUrl})';
+        _error = 'Komut gönderilemedi (${EegApiConfig.displayUrl})';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -166,7 +166,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
       if (!mounted) return;
       setState(() {
         _live = LiveEegState.disconnected(error: e.toString());
-        _error = 'API bağlantısı yok (${EegApiConfig.baseUrl})';
+        _error = 'API bağlantısı yok (${EegApiConfig.displayUrl})';
       });
     } finally {
       _fetching = false;
@@ -176,7 +176,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
   @override
   Widget build(BuildContext context) {
     final connected = _live.connection == ConnectionStatus.connected;
-    final streaming = connected && _collecting;
+    final deviceLive = connected && _hasDataFlow(_live);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -202,7 +202,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                       ),
                       SizedBox(height: 6),
                       Text(
-                        'Başlat ile Python veri toplar; Durdur Cortex’i keser',
+                        'Cihaz canlı izlenir; Başlat EEG kaydını açar',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,
@@ -250,19 +250,21 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  !_collecting
-                      ? 'Python durdu — Başlat ile devam'
-                      : (streaming
-                          ? 'Canlı veri alınıyor'
-                          : 'Bağlanıyor / cihaz bekleniyor'),
+                  deviceLive
+                      ? (_collecting
+                          ? 'Cihaz bağlı · EEG kaydı açık'
+                          : 'Cihaz bağlı · kayıt kapalı')
+                      : (_live.connection == ConnectionStatus.connecting
+                          ? 'Cortex’e bağlanılıyor…'
+                          : 'Cihaz bekleniyor'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: !_collecting
-                        ? AppColors.warning
-                        : (streaming
+                    color: deviceLive
+                        ? (_collecting
                             ? AppColors.success
-                            : AppColors.textMuted),
+                            : AppColors.textMuted)
+                        : AppColors.warning,
                   ),
                 ),
               ],
@@ -281,7 +283,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   style: const TextStyle(fontSize: 13, color: AppColors.danger),
                 ),
               ),
-            if (_collecting && !connected)
+            if (!connected &&
+                _live.connection != ConnectionStatus.connecting)
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
@@ -289,9 +292,14 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   color: const Color(0xFFFBF0D4),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Veri akışı yok. Headset kapalı veya bağlantı kopmuş olabilir.',
-                  style: TextStyle(fontSize: 13, color: AppColors.warning, height: 1.35),
+                child: Text(
+                  _live.error ??
+                      'Veri akışı yok. Headset kapalı veya bağlantı kopmuş olabilir.',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.warning,
+                    height: 1.35,
+                  ),
                 ),
               ),
             Row(
@@ -300,18 +308,16 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   child: _MiniStat(
                     label: 'Durum',
                     child: StatusPill(
-                      label: !_collecting
-                          ? 'Durdu'
-                          : (streaming
-                              ? 'Akıyor'
-                              : (connected ? 'Bekliyor' : 'Bağlanıyor')),
-                      tone: !_collecting
+                      label: !deviceLive
+                          ? (_live.connection == ConnectionStatus.connecting
+                              ? 'Bağlanıyor'
+                              : 'Kapalı')
+                          : (_collecting ? 'Kayıt' : 'İzleme'),
+                      tone: !deviceLive
                           ? StatusTone.warning
-                          : (streaming
+                          : (_collecting
                               ? StatusTone.success
-                              : (connected
-                                  ? StatusTone.info
-                                  : StatusTone.warning)),
+                              : StatusTone.info),
                     ),
                   ),
                 ),

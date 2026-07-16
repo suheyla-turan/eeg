@@ -47,6 +47,11 @@ def set_collecting(active: bool) -> None:
             _state["error"] = None
 
 
+def is_collecting() -> bool:
+    with _lock:
+        return bool(_state["collecting"])
+
+
 def set_connecting() -> None:
     with _lock:
         _state["connection"] = "connecting"
@@ -54,11 +59,14 @@ def set_connecting() -> None:
 
 
 def set_disconnected(error: str | None = None) -> None:
+    """Bağlantı koptu — collecting bayrağı korunur (Durdur cihazı kesmez)."""
     with _lock:
         _state["connection"] = "disconnected"
         _state["updated_at"] = None
         if error:
             _state["error"] = error
+        else:
+            _state["error"] = None
 
 
 def set_connected() -> None:

@@ -52,7 +52,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
       if (!mounted) return;
       setState(() {
         _live = LiveEegState.disconnected(error: e.toString());
-        _lastError = 'Python API\'ye ulaşılamadı (${EegApiConfig.baseUrl})';
+        _lastError = 'Python API\'ye ulaşılamadı (${EegApiConfig.displayUrl})';
         _loading = false;
       });
     }
@@ -72,7 +72,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
       if (!mounted) return;
       setState(() {
         _lastError =
-            'Komut gönderilemedi (${EegApiConfig.baseUrl}): $e';
+            'Komut gönderilemedi (${EegApiConfig.displayUrl}): $e';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -120,7 +120,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                         ),
                         SizedBox(height: 6),
                         Text(
-                          'Python / Emotiv Cortex üzerinden anlık veri',
+                          'Cihaz durumu otomatik; Başlat EEG kaydını açar',
                           style: TextStyle(
                             fontSize: 14,
                             color: AppColors.textSecondary,
@@ -160,8 +160,8 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
               const SizedBox(height: 12),
               Text(
                 collecting
-                    ? 'Python veri topluyor (Cortex aktif)'
-                    : 'Veri toplama kapalı — Başlat ile Python kodunu çalıştır',
+                    ? 'EEG veri toplama açık'
+                    : 'Cihaz durumu canlı — Başlat yalnızca EEG kaydını açar',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -194,7 +194,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                 ),
               if (_live.connection == ConnectionStatus.connected)
                 const SizedBox.shrink()
-              else if (!collecting)
+              else if (_live.connection == ConnectionStatus.connecting)
                 Container(
                   margin: const EdgeInsets.only(bottom: 14),
                   padding: const EdgeInsets.all(12),
@@ -203,7 +203,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
-                    'Başlat’a basınca PC’deki Python Cortex’e bağlanır ve veri akmaya başlar.',
+                    'Python Cortex’e bağlanıyor… Emotiv Launcher ve cihaz hazır olmalı.',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -288,7 +288,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                 child: ContactQualityGrid(quality: _live.contactQuality),
               ),
               Text(
-                'API: ${EegApiConfig.baseUrl}/live · 500 ms yenileme',
+                'API: ${EegApiConfig.displayUrl}/live · 500 ms yenileme',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 12,

@@ -137,7 +137,7 @@ class CortexClient:
 
     def listen(self):
         channels = live_state.CHANNELS + ["OVERALL"]
-        print("\nVeriler dinleniyor...\n")
+        print("\nCihaz durumu dinleniyor (DEV)...\n")
         last_dev_at = time.time()
 
         while not self._stop.is_set():
@@ -162,6 +162,10 @@ class CortexClient:
                 print("=" * 60)
                 print(f"Batarya      : %{battery_percent}")
                 print(f"Sinyal       : {signal}")
+                print(
+                    f"Toplama      : "
+                    f"{'AÇIK' if live_state.is_collecting() else 'kapalı'}"
+                )
                 print()
                 for name, value in zip(channels, sensors):
                     print(f"{name:<10}: {value}")
@@ -186,7 +190,10 @@ class CortexClient:
         )
 
     def start_background(self):
-        """Cortex bağlantısını arka planda başlatır (API sunucusu için)."""
+        """Cortex bağlantısını arka planda başlatır (cihaz durumu / DEV stream).
+
+        Veri toplama (collecting) bundan bağımsızdır — API startup'ta çağrılır.
+        """
         if self.is_running:
             return
 
@@ -195,7 +202,6 @@ class CortexClient:
             self._thread.join(timeout=2.0)
 
         self._stop.clear()
-        live_state.set_collecting(True)
 
         def runner():
             while not self._stop.is_set():
@@ -221,10 +227,11 @@ class CortexClient:
 
         self._thread = threading.Thread(target=runner, daemon=True)
         self._thread.start()
+        print("Cortex arka plan bağlantısı başlatıldı (otomatik yeniden bağlanma aktif).")
 
     def stop(self):
+        """API kapanırken Cortex thread'ini ve WebSocket'i tamamen durdurur."""
         self._stop.set()
-        live_state.set_collecting(False)
         self.disconnect()
 
     def disconnect(self):
