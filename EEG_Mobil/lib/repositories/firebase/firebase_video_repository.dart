@@ -36,12 +36,13 @@ class FirebaseVideoRepository implements VideoRepository {
 
   @override
   Future<List<VideoContent>> getActive() async {
-    final snap = await _col.where('active', isEqualTo: true).get();
-    final list = snap.docs
-        .map((d) => VideoContent.fromMap(d.data(), id: d.id))
+    // Firestore `where('active' == true)` alanı olmayan belgeleri dışlar.
+    // Liste ekranı getAll + fromMap(active ?? true) kullandığı için
+    // istemci tarafında aynı kuralı uygularız.
+    final all = await getAll();
+    return all
+        .where((v) => v.active && v.storageUrl.trim().isNotEmpty)
         .toList();
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
   }
 
   @override

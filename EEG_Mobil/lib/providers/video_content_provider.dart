@@ -155,6 +155,35 @@ class VideoContentProvider extends ChangeNotifier {
     return base.isEmpty ? 'Video' : base;
   }
 
+  Future<bool> rename(String videoId, String title) async {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) {
+      errorMessage = 'İsim boş olamaz';
+      notifyListeners();
+      return false;
+    }
+
+    final index = videos.indexWhere((v) => v.videoId == videoId);
+    if (index < 0) {
+      errorMessage = 'Video bulunamadı';
+      notifyListeners();
+      return false;
+    }
+
+    errorMessage = null;
+    try {
+      final updated = videos[index].copyWith(title: trimmed);
+      await _repository.update(updated);
+      videos[index] = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> updateVideo({
     required VideoContent video,
     File? newVideoFile,

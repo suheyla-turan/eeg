@@ -46,7 +46,7 @@ class VideoContent {
       storageUrl: map['storageUrl'] as String? ?? '',
       thumbnail: map['thumbnail'] as String?,
       duration: (map['duration'] as num?)?.toInt() ?? 0,
-      active: map['active'] as bool? ?? true,
+      active: _readActive(map['active']),
       createdAt: _readDate(map['createdAt']),
     );
   }
@@ -80,4 +80,16 @@ DateTime _readDate(dynamic value) {
   if (value is Timestamp) return value.toDate();
   if (value is DateTime) return value;
   return DateTime.now();
+}
+
+bool _readActive(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final v = value.trim().toLowerCase();
+    if (v == 'false' || v == '0' || v == 'no' || v == 'pasif') return false;
+    if (v == 'true' || v == '1' || v == 'yes' || v == 'aktif') return true;
+  }
+  // Alan yoksa veya tanınmıyorsa aktif kabul et (liste ekranıyla uyumlu).
+  return true;
 }

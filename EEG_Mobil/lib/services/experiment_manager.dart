@@ -117,9 +117,21 @@ class ExperimentManager extends ChangeNotifier {
     try {
       videos = await _videos.getActive();
       texts = await _texts.getActive();
+      AppLogger.instance.firebase(
+        'Medya yüklendi: ${videos.length} aktif video, ${texts.length} aktif metin',
+      );
       notifyListeners();
-    } catch (e) {
+    } catch (e, st) {
+      videos = [];
+      texts = [];
+      errorMessage = 'Medya yüklenemedi: $e';
+      AppLogger.instance.error(
+        'Aktif medya yüklenemedi',
+        error: e,
+        stackTrace: st,
+      );
       if (kDebugMode) debugPrint('Media load: $e');
+      notifyListeners();
     }
   }
 

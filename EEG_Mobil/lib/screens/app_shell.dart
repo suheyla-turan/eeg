@@ -42,6 +42,8 @@ class AppShell extends StatefulWidget {
 class AppShellState extends State<AppShell> {
   AppDestination _destination = AppDestination.home;
   Participant? _experimentParticipant;
+  final List<AppDestination> _backStack = <AppDestination>[];
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   static const _titles = <AppDestination, String>{
     AppDestination.home: 'EEG Araştırma',
@@ -56,11 +58,28 @@ class AppShellState extends State<AppShell> {
     AppDestination.settings: 'Ayarlar',
   };
 
+  bool get _canGoBackInsideApp =>
+      _destination != AppDestination.home || _backStack.isNotEmpty;
+
   void goTo(
     AppDestination destination, {
     Participant? experimentParticipant,
   }) {
+    if (destination == _destination) {
+      if (destination == AppDestination.startExperiment) {
+        setState(() => _experimentParticipant = experimentParticipant);
+      }
+      return;
+    }
+
     setState(() {
+      if (destination == AppDestination.home) {
+        _backStack.clear();
+      } else if (_destination != AppDestination.home) {
+        _backStack.add(_destination);
+      } else {
+        _backStack.add(AppDestination.home);
+      }
       _destination = destination;
       if (destination == AppDestination.startExperiment) {
         _experimentParticipant = experimentParticipant;
@@ -69,6 +88,32 @@ class AppShellState extends State<AppShell> {
         _experimentParticipant = null;
       }
     });
+  }
+
+  bool _handleBack() {
+    final scaffold = _scaffoldKey.currentState;
+    if (scaffold?.isDrawerOpen ?? false) {
+      scaffold!.closeDrawer();
+      return true;
+    }
+
+    if (_backStack.isNotEmpty) {
+      setState(() {
+        _destination = _backStack.removeLast();
+        if (_destination != AppDestination.startExperiment) {
+          _experimentParticipant = null;
+        }
+      });
+      return true;
+    }
+    if (_destination != AppDestination.home) {
+      setState(() {
+        _destination = AppDestination.home;
+        _experimentParticipant = null;
+      });
+      return true;
+    }
+    return false;
   }
 
   /// Kayıt sonrası deney ekranına geçiş.
@@ -156,25 +201,33 @@ class AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_destination] ?? 'EEG Araştırma'),
-      ),
-      drawer: _AppDrawer(
-        current: _destination,
-        onSelect: (dest) {
-          Navigator.of(context).pop();
-          if (dest == AppDestination.startExperiment) {
-            openParticipantSelect();
-            return;
-          }
-          goTo(dest);
-        },
-      ),
-      body: FadeThroughSwitcher(
-        child: KeyedSubtree(
-          key: ValueKey(_destination),
-          child: _body(),
+    return PopScope(
+      canPop: !_canGoBackInsideApp,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        appBar: AppBar(
+          title: Text(_titles[_destination] ?? 'EEG Araştırma'),
+        ),
+        drawer: _AppDrawer(
+          current: _destination,
+          onSelect: (dest) {
+            Navigator.of(context).pop();
+            if (dest == AppDestination.startExperiment) {
+              openParticipantSelect();
+              return;
+            }
+            goTo(dest);
+          },
+        ),
+        body: FadeThroughSwitcher(
+          child: KeyedSubtree(
+            key: ValueKey(_destination),
+            child: _body(),
+          ),
         ),
       ),
     );

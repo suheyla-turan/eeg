@@ -26,12 +26,10 @@ class FirebaseTextRepository implements TextRepository {
 
   @override
   Future<List<TextContent>> getActive() async {
-    final snap = await _col.where('active', isEqualTo: true).get();
-    final list = snap.docs
-        .map((d) => TextContent.fromMap(d.data(), id: d.id))
-        .toList();
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
+    // Firestore equality sorgusu alanı olmayan belgeleri dışlar;
+    // liste ekranıyla aynı anlam: eksik active → aktif sayılır.
+    final all = await getAll();
+    return all.where((t) => t.active).toList();
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../core/app_logger.dart';
 import '../../models/video_content.dart';
 import '../../providers/experiment_provider.dart';
 import '../../services/experiment_manager.dart';
@@ -70,13 +71,16 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
     try {
       await manager.loadMediaOptions();
       _videos = List<VideoContent>.from(
-        manager.videos.where((v) => v.storageUrl.isNotEmpty),
+        manager.videos.where((v) => v.storageUrl.trim().isNotEmpty),
       );
 
       if (_videos.isEmpty) {
         setState(() {
           _loading = false;
-          _loadError = 'Aktif video bulunamadı. Önce CMS\'den video ekleyin.';
+          _loadError = manager.errorMessage ??
+              'Oynatılabilir aktif video yok. Videolar ekranında '
+                  'yükleme tamamlanmış ve Aktif olan kayıtlar olmalı '
+                  '(storageUrl dolu).';
         });
         return;
       }
@@ -88,6 +92,9 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
       _startExperimentCountdown();
       _startUiTicker();
 
+      AppLogger.instance.experiment(
+        'Reels: ${_videos.length} video hazır, oynatma başlıyor',
+      );
       setState(() => _loading = false);
       await _openVideoAt(0);
     } catch (e) {
@@ -125,9 +132,22 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
     _positionListener = null;
   }
 
-  Future<void> _openVideoAt(int index) async {
+  Future<void> _openVideoAt(int index, {int attempt = 0}) async {
     final feed = _feed;
     if (feed == null || _videos.isEmpty) return;
+
+    // Bozuk URL'lerde sonsuz döngüyü engelle — en fazla bir tur dene.
+    if (attempt >= feed.sourceCount) {
+      AppLogger.instance.error(
+        'Reels: hiçbir video açılamadı (${feed.sourceCount} deneme)',
+      );
+      if (!mounted) return;
+      setState(() {
+        _loadError =
+            'Videolar açılamadı. Bağlantıyı ve Firebase Storage URL\'lerini kontrol edin.';
+      });
+      return;
+    }
 
     // Sonraki tur(lar) için kapasite: kullanıcı kaydırmadan önce hazır olsun.
     feed.ensureCapacity(index + feed.sourceCount + 1);
@@ -138,9 +158,13 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
     await previous?.dispose();
 
     final video = feed.at(index);
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(video.storageUrl),
-    );
+    final url = video.storageUrl.trim();
+    if (url.isEmpty) {
+      await _openVideoAt(index + 1, attempt: attempt + 1);
+      return;
+    }
+
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
 
     try {
       await controller.initialize();
@@ -169,19 +193,31 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
         return;
       }
 
+      AppLogger.instance.experiment(
+        'Reels video oynuyor: ${video.title} (${video.videoId})',
+      );
+
       setState(() {
         _controller = controller;
         _currentIndex = index;
         _videoStartedAt = DateTime.now();
         _isPlaying = true;
+        _loadError = null;
       });
-    } catch (e) {
-      await controller.dispose();
-      if (!mounted) return;
-      await _openVideoAt(index + 1);
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(index + 1);
+
+      if (_pageController.hasClients &&
+          _pageController.page?.round() != index) {
+        _pageController.jumpToPage(index);
       }
+    } catch (e, st) {
+      await controller.dispose();
+      AppLogger.instance.error(
+        'Reels video açılamadı: ${video.title}',
+        error: e,
+        stackTrace: st,
+      );
+      if (!mounted) return;
+      await _openVideoAt(index + 1, attempt: attempt + 1);
     }
   }
 
