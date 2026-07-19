@@ -41,10 +41,10 @@ class ExperimentManager extends ChangeNotifier {
   final VideoWatchEventRepository _watchEvents;
   final TextQuizResponseRepository _quizResponses;
 
-  static const baselineDuration = Duration(seconds: 30);
   static const briefingCountdown = Duration(seconds: 15);
   static const reelsDuration = Duration(minutes: 10);
-  static const textMinDuration = Duration(minutes: 10);
+  /// Metin okuma oturumu süresi (reels ile aynı).
+  static const textDuration = Duration(minutes: 10);
   static const eegTickInterval = Duration(milliseconds: 500);
 
   ExperimentStep step = ExperimentStep.participantInfo;
@@ -141,9 +141,7 @@ class ExperimentManager extends ChangeNotifier {
     _session.setStepName(next.name);
 
     // EEG faz etiketi — kayıt kesilmez.
-    if (next == ExperimentStep.baseline) {
-      _session.setPhase('baseline');
-    } else if (next == ExperimentStep.reels ||
+    if (next == ExperimentStep.reels ||
         next == ExperimentStep.reelsBriefing ||
         next == ExperimentStep.reelsCompleted) {
       if (_session.isRunning) _session.setPhase('reels');
@@ -162,14 +160,18 @@ class ExperimentManager extends ChangeNotifier {
     goTo(ExperimentStep.experimentBriefing);
   }
 
-  Future<void> proceedFromBriefing() async {
-    goTo(ExperimentStep.baseline);
+  /// Bilgilendirme sonrası EEG kaydını başlatır ve Reels öncesi adıma geçer.
+  Future<bool> proceedFromBriefing() async {
+    final ok = await startRecording(initialPhase: 'reels');
+    if (!ok) return false;
+    goTo(ExperimentStep.reelsBriefing);
+    return true;
   }
 
-  /// Baseline başında EEG kaydını başlatır.
-  Future<bool> startBaselineRecording() async {
+  /// EEG kaydını başlatır (veya zaten açıksa ticker'ı sürdürür).
+  Future<bool> startRecording({String initialPhase = 'reels'}) async {
     if (_session.isRunning) {
-      _session.setPhase('baseline');
+      _session.setPhase(initialPhase);
       _startEegTicker();
       return true;
     }
@@ -177,25 +179,21 @@ class ExperimentManager extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      await _session.startSession(initialPhase: 'baseline');
+      await _session.startSession(initialPhase: initialPhase);
       experiment = _session.currentExperiment;
       sampleCount = _session.buffer.sampleCount;
       _startEegTicker();
       _busy = false;
-      AppLogger.instance.experiment('Baseline kayıt başladı');
+      AppLogger.instance.experiment('EEG kayıt başladı ($initialPhase)');
       notifyListeners();
       return true;
     } catch (e) {
       _busy = false;
       errorMessage = e.toString();
-      AppLogger.instance.error('Baseline başlatılamadı', error: e);
+      AppLogger.instance.error('EEG kayıt başlatılamadı', error: e);
       notifyListeners();
       return false;
     }
-  }
-
-  void onBaselineFinished() {
-    goTo(ExperimentStep.reelsBriefing);
   }
 
   void proceedFromReelsBriefing() {
@@ -204,6 +202,22 @@ class ExperimentManager extends ChangeNotifier {
 
   void onReelsFinished() {
     goTo(ExperimentStep.reelsCompleted);
+  }
+
+  Future<void> saveReelsMoodAndContinue({
+    required List<String> moodOptions,
+    String? moodOtherText,
+  }) async {
+    try {
+      await _session.saveReelsMood(
+        moodOptions: moodOptions,
+        moodOtherText: moodOtherText,
+      );
+      experiment = _session.currentExperiment;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Reels mood save: $e');
+    }
+    goTo(ExperimentStep.textBriefing);
   }
 
   void proceedFromReelsCompleted() {
@@ -250,22 +264,32 @@ class ExperimentManager extends ChangeNotifier {
   }
 
   Future<TextContent?> resolveReadingText() async {
-    if (selectedTextId != null && selectedTextId!.isNotEmpty) {
-      final byId = await _texts.getById(selectedTextId!);
-      if (byId != null) return byId;
-    }
+    final list = await resolveReadingTexts();
+    if (list.isEmpty) return null;
+    return list.first;
+  }
+
+  /// 10 dk oturumda sırayla gösterilecek aktif metinler.
+  /// Seçili metin varsa başa alınır; yoksa tüm aktif metinler.
+  Future<List<TextContent>> resolveReadingTexts() async {
     if (texts.isEmpty) {
       texts = await _texts.getActive();
     }
-    if (texts.isEmpty) return null;
-    return texts.first;
+
+    if (selectedTextId != null && selectedTextId!.isNotEmpty) {
+      final byId = await _texts.getById(selectedTextId!);
+      final rest = texts.where((t) => t.textId != selectedTextId).toList();
+      if (byId != null) return [byId, ...rest];
+    }
+
+    return List<TextContent>.from(texts);
   }
 
-  /// Metin testi + duygu cevabını kaydeder (EEG analizinden bağımsız).
+  /// Metin testi + (oturum sonunda) duygu cevabını kaydeder.
   Future<void> saveQuizResponse({
     required String textId,
     required List<TextQuizAnswer> answers,
-    required String moodOption,
+    List<String> moodOptions = const [],
     String? moodOtherText,
   }) async {
     final exp = experiment ?? _session.currentExperiment;
@@ -276,7 +300,8 @@ class ExperimentManager extends ChangeNotifier {
       experimentId: exp.experimentId,
       textId: textId,
       answers: answers,
-      moodOption: moodOption,
+      moodOption: moodOptions.join(', '),
+      moodOptions: moodOptions,
       moodOtherText: moodOtherText,
       createdAt: DateTime.now(),
     );

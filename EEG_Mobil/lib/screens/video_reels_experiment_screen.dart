@@ -263,16 +263,9 @@ class _VideoReelsExperimentScreenState
   }
 
   Future<void> _onPageChanged(int index) async {
-    if (index <= _currentIndex) {
-      // Geri dönüşü engelle.
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(_currentIndex);
-      }
-      return;
-    }
-
+    if (index == _currentIndex) return;
     final now = DateTime.now();
-    await _recordCurrentWatch(transitionTime: now);
+    unawaited(_recordCurrentWatch(transitionTime: now));
     await _openVideoAt(index);
   }
 
@@ -360,16 +353,13 @@ class _VideoReelsExperimentScreenState
           PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
-            physics: const ForwardOnlyScrollPhysics(),
-            onPageChanged: _onPageChanged,
+              onPageChanged: _onPageChanged,
             // 10 dk boyunca ileri kaydırma: tur tur rastgele feed.
             itemBuilder: (context, index) {
               final feed = _feed!;
               feed.ensureCapacity(index + 1);
-              final video = feed.at(index);
               final isActive = index == _currentIndex;
               return _ReelPage(
-                video: video,
                 controller: isActive ? _controller : null,
               );
             },
@@ -440,11 +430,9 @@ class _VideoReelsExperimentScreenState
 
 class _ReelPage extends StatelessWidget {
   const _ReelPage({
-    required this.video,
     required this.controller,
   });
 
-  final VideoContent video;
   final VideoPlayerController? controller;
 
   @override
@@ -467,60 +455,7 @@ class _ReelPage extends StatelessWidget {
                     ),
                   ),
                 )
-              : const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-        ),
-        Positioned(
-          left: 16,
-          right: 72,
-          bottom: 40,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (video.category.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    video.category,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              Text(
-                video.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (video.description.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  video.description,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ],
-          ),
+              : const SizedBox.shrink(),
         ),
       ],
     );

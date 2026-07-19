@@ -17,6 +17,10 @@ class Experiment {
   final String? csvStoragePath;
   final String? resultId;
   final String? cancelReason;
+  /// Geriye uyumluluk: seçilen duyguların virgülle birleşik hali.
+  final String? reelsMoodOption;
+  final List<String> reelsMoodOptions;
+  final String? reelsMoodOtherText;
   final DateTime createdAt;
 
   const Experiment({
@@ -34,6 +38,9 @@ class Experiment {
     this.csvStoragePath,
     this.resultId,
     this.cancelReason,
+    this.reelsMoodOption,
+    this.reelsMoodOptions = const [],
+    this.reelsMoodOtherText,
     required this.createdAt,
   });
 
@@ -55,6 +62,10 @@ class Experiment {
       'csvStoragePath': csvStoragePath,
       'resultId': resultId,
       'cancelReason': cancelReason,
+      if (reelsMoodOption != null) 'reelsMoodOption': reelsMoodOption,
+      if (reelsMoodOptions.isNotEmpty) 'reelsMoodOptions': reelsMoodOptions,
+      if (reelsMoodOtherText != null && reelsMoodOtherText!.isNotEmpty)
+        'reelsMoodOtherText': reelsMoodOtherText,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -66,6 +77,21 @@ class Experiment {
         (completed
             ? ExperimentStatus.completed
             : ExperimentStatus.pending);
+
+    final legacyMood = map['reelsMoodOption'] as String?;
+    final rawMoodOptions = map['reelsMoodOptions'];
+    final moodOptions = rawMoodOptions is List
+        ? rawMoodOptions
+            .map((e) => e.toString())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : (legacyMood == null || legacyMood.isEmpty
+            ? <String>[]
+            : legacyMood
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList());
 
     return Experiment(
       experimentId: id ?? map['experimentId'] as String? ?? '',
@@ -82,6 +108,11 @@ class Experiment {
       csvStoragePath: map['csvStoragePath'] as String?,
       resultId: map['resultId'] as String?,
       cancelReason: map['cancelReason'] as String?,
+      reelsMoodOption: moodOptions.isNotEmpty
+          ? moodOptions.join(', ')
+          : legacyMood,
+      reelsMoodOptions: moodOptions,
+      reelsMoodOtherText: map['reelsMoodOtherText'] as String?,
       createdAt: _readDate(map['createdAt']),
     );
   }
@@ -101,6 +132,9 @@ class Experiment {
     String? csvStoragePath,
     String? resultId,
     String? cancelReason,
+    String? reelsMoodOption,
+    List<String>? reelsMoodOptions,
+    String? reelsMoodOtherText,
     DateTime? createdAt,
   }) {
     return Experiment(
@@ -118,6 +152,9 @@ class Experiment {
       csvStoragePath: csvStoragePath ?? this.csvStoragePath,
       resultId: resultId ?? this.resultId,
       cancelReason: cancelReason ?? this.cancelReason,
+      reelsMoodOption: reelsMoodOption ?? this.reelsMoodOption,
+      reelsMoodOptions: reelsMoodOptions ?? this.reelsMoodOptions,
+      reelsMoodOtherText: reelsMoodOtherText ?? this.reelsMoodOtherText,
       createdAt: createdAt ?? this.createdAt,
     );
   }

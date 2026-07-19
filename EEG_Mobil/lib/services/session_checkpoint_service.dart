@@ -64,8 +64,8 @@ class SessionCheckpoint {
       experimentId: json['experimentId'] as String? ?? '',
       participantId: json['participantId'] as String? ?? '',
       experimentType: json['experimentType'] as String? ?? 'full_protocol',
-      phase: json['phase'] as String? ?? 'baseline',
-      step: json['step'] as String? ?? ExperimentStep.baseline.name,
+      phase: json['phase'] as String? ?? 'reels',
+      step: json['step'] as String? ?? ExperimentStep.reelsBriefing.name,
       samples: samples,
       savedAt: DateTime.tryParse(json['savedAt'] as String? ?? '') ??
           DateTime.now(),

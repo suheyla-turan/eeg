@@ -10,7 +10,9 @@ import '../../providers/experiment_provider.dart';
 import '../../services/experiment_manager.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
+import '../../widgets/demo_skip_button.dart';
 import '../../widgets/experiment_scaffold.dart';
+import '../../widgets/mood_question_panel.dart';
 import '../../widgets/section_card.dart';
 
 enum _ReadingPhase { reading, quiz, mood }
@@ -23,34 +25,33 @@ class TextReadingStepScreen extends StatefulWidget {
 }
 
 class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
-  static const _moodOptions = <String>[
-    'Mutlu',
-    'Sakin',
-    'Nötr',
-    'Yorgun',
-    'Stresli',
-    'Diğer',
-  ];
   static const _choiceLabels = ['A', 'B', 'C', 'D'];
 
   Timer? _uiTimer;
+  Timer? _experimentTimer;
   Duration _elapsed = Duration.zero;
   DateTime? _startedAt;
 
-  TextContent? _text;
+  List<TextContent> _texts = [];
+  int _textIndex = 0;
   bool _loading = true;
   String? _error;
   bool _submitting = false;
+  bool _sessionTimedOut = false;
+  /// Tek metin oturumunda içerik bitince süre dolana kadar bekleniyor.
+  bool _awaitingSessionEnd = false;
 
   _ReadingPhase _phase = _ReadingPhase.reading;
   int _quizIndex = 0;
   final Map<String, int> _selectedAnswers = {};
-  String? _moodOption;
-  final _moodOther = TextEditingController();
 
-  bool get _canFinish => _elapsed >= ExperimentManager.textMinDuration;
+  TextContent? get _text =>
+      _texts.isEmpty ? null : _texts[_textIndex % _texts.length];
 
   List<TextQuizQuestion> get _questions => _text?.questions ?? const [];
+
+  bool get _timeUp =>
+      _sessionTimedOut || _elapsed >= ExperimentManager.textDuration;
 
   @override
   void initState() {
@@ -61,24 +62,26 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
   @override
   void dispose() {
     _uiTimer?.cancel();
-    _moodOther.dispose();
+    _experimentTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _bootstrap() async {
     final manager = context.read<ExperimentProvider>().manager;
     try {
-      final text = await manager.resolveReadingText();
+      final texts = await manager.resolveReadingTexts();
       if (!mounted) return;
 
       setState(() {
-        _text = text;
+        _texts = texts;
         _loading = false;
-        _error = text == null
+        _error = texts.isEmpty
             ? 'Okuma metni bulunamadı. CMS\'den aktif metin ekleyin.'
             : null;
         _startedAt = DateTime.now();
       });
+
+      if (texts.isEmpty) return;
 
       _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted || _startedAt == null) return;
@@ -86,6 +89,8 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
           _elapsed = DateTime.now().difference(_startedAt!);
         });
       });
+
+      _experimentTimer = Timer(ExperimentManager.textDuration, _onSessionTimeUp);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -95,11 +100,21 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
     }
   }
 
-  void _onReadingFinished() {
-    if (!_canFinish) return;
+  /// 10 dk dolunca duygu sorusuna geç (reels ile aynı mantık).
+  void _onSessionTimeUp() {
+    if (!mounted || _phase == _ReadingPhase.mood) return;
     _uiTimer?.cancel();
+    _experimentTimer?.cancel();
+    setState(() {
+      _sessionTimedOut = true;
+      _elapsed = ExperimentManager.textDuration;
+      _phase = _ReadingPhase.mood;
+    });
+  }
+
+  void _onReadingFinished() {
     if (_questions.isEmpty) {
-      setState(() => _phase = _ReadingPhase.mood);
+      _goNextTextOrMood();
       return;
     }
     setState(() {
@@ -108,40 +123,89 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
     });
   }
 
+  /// Demo: metin / test / duygu aşamasını atlayıp analize geçer.
+  Future<void> _demoSkipText() async {
+    if (_submitting) return;
+    _uiTimer?.cancel();
+    _experimentTimer?.cancel();
+    setState(() => _submitting = true);
+    final manager = context.read<ExperimentProvider>().manager;
+    final text = _text;
+    if (text != null) {
+      await manager.saveQuizResponse(
+        textId: text.textId,
+        answers: const [],
+        moodOptions: const ['Nötr'],
+      );
+    }
+    if (!mounted) return;
+    await manager.finishAndAnalyze();
+  }
+
   void _selectAnswer(int choiceIndex) {
     final q = _questions[_quizIndex];
     setState(() => _selectedAnswers[q.questionId] = choiceIndex);
   }
 
-  void _nextQuiz() {
+  Future<void> _nextQuiz() async {
     final q = _questions[_quizIndex];
     if (!_selectedAnswers.containsKey(q.questionId)) return;
 
-    if (_quizIndex >= _questions.length - 1) {
+    if (_quizIndex < _questions.length - 1) {
+      setState(() => _quizIndex++);
+      return;
+    }
+
+    // Süre dolduysa cevapları duygu adımında birlikte kaydet.
+    if (_timeUp || _texts.isEmpty) {
+      _uiTimer?.cancel();
+      _experimentTimer?.cancel();
       setState(() => _phase = _ReadingPhase.mood);
       return;
     }
-    setState(() => _quizIndex++);
+
+    await _persistCurrentQuizAnswers(moodOptions: const []);
+    if (!mounted) return;
+    _goNextTextOrMood();
   }
 
-  Future<void> _submitMoodAndFinish() async {
-    if (_moodOption == null) return;
-    if (_moodOption == 'Diğer' && _moodOther.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen nasıl hissettiğinizi yazın'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+  /// Süre dolmadıysa sonraki metne geç; dolduysa duygu sorusu.
+  void _goNextTextOrMood() {
+    if (_timeUp || _texts.isEmpty) {
+      _uiTimer?.cancel();
+      _experimentTimer?.cancel();
+      setState(() => _phase = _ReadingPhase.mood);
       return;
     }
 
-    setState(() => _submitting = true);
-    final manager = context.read<ExperimentProvider>().manager;
+    // Tek metin: tekrar quiz yok — 10 dk dolunca duygu sorulur.
+    if (_texts.length <= 1) {
+      setState(() {
+        _awaitingSessionEnd = true;
+        _quizIndex = 0;
+        _selectedAnswers.clear();
+        _phase = _ReadingPhase.reading;
+      });
+      return;
+    }
+
+    setState(() {
+      _textIndex = (_textIndex + 1) % _texts.length;
+      _quizIndex = 0;
+      _selectedAnswers.clear();
+      _phase = _ReadingPhase.reading;
+    });
+  }
+
+  Future<void> _persistCurrentQuizAnswers({
+    required List<String> moodOptions,
+    String? moodOtherText,
+  }) async {
     final text = _text;
+    if (text == null) return;
 
     final answers = <TextQuizAnswer>[];
-    for (final q in _questions) {
+    for (final q in text.questions) {
       final selected = _selectedAnswers[q.questionId];
       if (selected == null) continue;
       answers.add(
@@ -156,15 +220,28 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
       );
     }
 
-    if (text != null) {
-      await manager.saveQuizResponse(
-        textId: text.textId,
-        answers: answers,
-        moodOption: _moodOption!,
-        moodOtherText:
-            _moodOption == 'Diğer' ? _moodOther.text.trim() : null,
-      );
-    }
+    // Ara metinlerde sadece test cevabı; duygu yalnızca oturum sonunda.
+    if (answers.isEmpty && moodOptions.isEmpty) return;
+
+    await context.read<ExperimentProvider>().manager.saveQuizResponse(
+          textId: text.textId,
+          answers: answers,
+          moodOptions: moodOptions,
+          moodOtherText: moodOtherText,
+        );
+  }
+
+  Future<void> _submitMoodAndFinish(
+    List<String> moodOptions,
+    String? moodOtherText,
+  ) async {
+    setState(() => _submitting = true);
+    final manager = context.read<ExperimentProvider>().manager;
+
+    await _persistCurrentQuizAnswers(
+      moodOptions: moodOptions,
+      moodOtherText: moodOtherText,
+    );
 
     if (!mounted) return;
     await manager.finishAndAnalyze();
@@ -177,7 +254,7 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
   }
 
   String _formatRemaining() {
-    final left = ExperimentManager.textMinDuration - _elapsed;
+    final left = ExperimentManager.textDuration - _elapsed;
     if (left.isNegative || left == Duration.zero) return '00:00';
     return _format(left);
   }
@@ -193,6 +270,12 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
 
     return ExperimentScaffold(
       title: title,
+      floatingActionButton: _loading || _error != null
+          ? null
+          : DemoSkipButton(
+              label: 'Metni Geç',
+              onPressed: _submitting ? null : _demoSkipText,
+            ),
       child: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -223,24 +306,39 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
                   _ReadingPhase.reading =>
                     _buildReading(context, sampleCount),
                   _ReadingPhase.quiz => _buildQuiz(context),
-                  _ReadingPhase.mood => _buildMood(context),
+                  _ReadingPhase.mood => MoodQuestionPanel(
+                      subtitle:
+                          '10 dakikalık metin oturumu bitti. Şu anki duygunuzu '
+                          'seçin — birden fazla duygu seçebilirsiniz. İsterseniz '
+                          '“Diğer” ile kendi duygunuzu da yazabilirsiniz.',
+                      submitLabel: 'Devam Et',
+                      submitting: _submitting,
+                      onSubmit: _submitMoodAndFinish,
+                    ),
                 },
     );
   }
 
   Widget _buildReading(BuildContext context, int sampleCount) {
+    final text = _text!;
+    final textOrdinal = (_textIndex % _texts.length) + 1;
+
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           child: Row(
             children: [
-              _InfoChip(label: 'Süre', value: _format(_elapsed)),
+              _InfoChip(label: 'Geçen', value: _format(_elapsed)),
               const SizedBox(width: 8),
-              _InfoChip(
-                label: _canFinish ? 'Hazır' : 'Kalan min.',
-                value: _canFinish ? '✓' : _formatRemaining(),
-              ),
+              _InfoChip(label: 'Kalan', value: _formatRemaining()),
+              if (_texts.length > 1) ...[
+                const SizedBox(width: 8),
+                _InfoChip(
+                  label: 'Metin',
+                  value: '$textOrdinal/${_texts.length}',
+                ),
+              ],
               const Spacer(),
               Text(
                 'EEG $sampleCount',
@@ -259,7 +357,7 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _text!.title,
+                  text.title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -274,9 +372,17 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 8),
+                Text(
+                  'Duygu sorusu yalnızca 10 dakikalık oturum bitince sorulur.',
+                  style: TextStyle(
+                    color: AppColors.hint(context),
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 20),
                 Text(
-                  _text!.content,
+                  text.content,
                   style: TextStyle(
                     fontSize: 22,
                     height: 1.65,
@@ -293,11 +399,12 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (!_canFinish)
+              if (_awaitingSessionEnd)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
-                    '“Okumayı Bitirdim” butonu 10 dakika sonra aktif olur.',
+                    'Bu metin bitti. Duygu sorusu 10 dakikalık süre '
+                    'dolunca sorulacak (kalan: ${_formatRemaining()}).',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -306,11 +413,15 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
                   ),
                 ),
               FilledButton(
-                onPressed: _canFinish ? _onReadingFinished : null,
+                onPressed: _awaitingSessionEnd ? null : _onReadingFinished,
                 child: Text(
-                  _questions.isEmpty
-                      ? 'Okumayı Bitirdim'
-                      : 'Okumayı Bitirdim — Teste Geç',
+                  _awaitingSessionEnd
+                      ? 'Süre bekleniyor…'
+                      : (_questions.isEmpty
+                          ? (_texts.length > 1
+                              ? 'Sonraki Metne Geç'
+                              : 'Okumayı Bitirdim')
+                          : 'Okumayı Bitirdim — Teste Geç'),
                 ),
               ),
             ],
@@ -324,6 +435,7 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
     final q = _questions[_quizIndex];
     final selected = _selectedAnswers[q.questionId];
     final scheme = Theme.of(context).colorScheme;
+    final isLastQuestion = _quizIndex >= _questions.length - 1;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -368,84 +480,14 @@ class _TextReadingStepScreenState extends State<TextReadingStepScreen> {
           FilledButton(
             onPressed: selected == null ? null : _nextQuiz,
             child: Text(
-              _quizIndex >= _questions.length - 1
-                  ? 'Testi Bitir'
+              isLastQuestion
+                  ? (_timeUp
+                      ? 'Testi Bitir'
+                      : (_texts.length > 1
+                          ? 'Sonraki Metne Geç'
+                          : 'Testi Bitir'))
                   : 'Sonraki Soru',
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMood(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Nasıl hissediyorsun?',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Metin ve testler bitti. Şu anki duygunuzu seçin.',
-            style: TextStyle(
-              color: AppColors.secondary(context),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Expanded(
-            child: ListView(
-              children: [
-                for (final option in _moodOptions) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _ChoiceTile(
-                      label: option == 'Diğer' ? '…' : option[0],
-                      text: option,
-                      selected: _moodOption == option,
-                      onTap: () => setState(() => _moodOption = option),
-                    ),
-                  ),
-                ],
-                if (_moodOption == 'Diğer') ...[
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _moodOther,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Nasıl hissettiğinizi yazın',
-                      hintText: 'Kısaca belirtin…',
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          FilledButton(
-            onPressed: _submitting || _moodOption == null
-                ? null
-                : _submitMoodAndFinish,
-            style: FilledButton.styleFrom(
-              backgroundColor: scheme.primary,
-            ),
-            child: _submitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('Devam Et'),
           ),
         ],
       ),

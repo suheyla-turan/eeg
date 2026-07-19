@@ -194,7 +194,7 @@ class ExperimentProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> startSession({String initialPhase = 'baseline'}) async {
+  Future<void> startSession({String initialPhase = 'reels'}) async {
     if (experiment == null) return;
     errorMessage = null;
     try {
@@ -229,12 +229,16 @@ class ExperimentProvider extends ChangeNotifier {
       sampleCount = _session.buffer.sampleCount;
       phase = ExperimentPhase.running;
 
-      final restoredStep = ExperimentStep.values.firstWhere(
+      var restoredStep = ExperimentStep.values.firstWhere(
         (s) => s.name == checkpoint.step,
         orElse: () => checkpoint.readingPhase
             ? ExperimentStep.textReading
-            : ExperimentStep.baseline,
+            : ExperimentStep.reelsBriefing,
       );
+      // Baseline adımı kaldırıldı — eski kayıtları Reels bilgilendirmeye aktar.
+      if (restoredStep == ExperimentStep.baseline) {
+        restoredStep = ExperimentStep.reelsBriefing;
+      }
 
       await manager.resumeFlow(
         participant: participant!,

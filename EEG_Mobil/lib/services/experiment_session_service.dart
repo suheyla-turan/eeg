@@ -58,8 +58,8 @@ class ExperimentSessionService {
   Participant? currentParticipant;
   Experiment? currentExperiment;
   bool isRunning = false;
-  String currentPhase = 'baseline';
-  String currentStepName = 'baseline';
+  String currentPhase = 'reels';
+  String currentStepName = 'reelsBriefing';
   bool readingPhase = false;
 
   Timer? _checkpointTimer;
@@ -89,7 +89,7 @@ class ExperimentSessionService {
     currentParticipant = participant;
     currentExperiment = experiment;
     buffer.clear();
-    currentPhase = 'baseline';
+    currentPhase = 'reels';
     readingPhase = false;
     AppLogger.instance.experiment(
       'Oturum oluşturuldu: ${experiment.experimentId}',
@@ -120,7 +120,7 @@ class ExperimentSessionService {
     currentParticipant = participant;
     currentExperiment = experiment;
     buffer.clear();
-    currentPhase = 'baseline';
+    currentPhase = 'reels';
     readingPhase = false;
     AppLogger.instance.experiment(
       'Mevcut katılımcı için oturum: ${experiment.experimentId}',
@@ -180,7 +180,7 @@ class ExperimentSessionService {
   }
 
   /// Tek seferlik kayıt başlatma. Sonraki aşamalarda tekrar çağrılmaz.
-  Future<void> startSession({String initialPhase = 'baseline'}) async {
+  Future<void> startSession({String initialPhase = 'reels'}) async {
     final experiment = currentExperiment;
     if (experiment == null) {
       throw StateError('Önce katılımcı ve experiment oluşturulmalı');
@@ -380,7 +380,7 @@ class ExperimentSessionService {
       meta: {
         'cancelled': cancelled,
         if (cancelReason != null) 'cancelReason': cancelReason,
-        'phases': ['baseline', 'reels', 'text'],
+        'phases': ['reels', 'text'],
       },
     );
     final csv = buffer.toCsv(
@@ -432,6 +432,28 @@ class ExperimentSessionService {
       experiment: finished,
       result: result,
       storagePath: uploaded.folderPath,
+    );
+  }
+
+  /// Video aşaması sonrası duygu cevabını deneye yazar.
+  Future<void> saveReelsMood({
+    required List<String> moodOptions,
+    String? moodOtherText,
+  }) async {
+    final experiment = currentExperiment;
+    if (experiment == null) return;
+
+    final joined = moodOptions.join(', ');
+    final updated = experiment.copyWith(
+      reelsMoodOption: joined,
+      reelsMoodOptions: List<String>.from(moodOptions),
+      reelsMoodOtherText: moodOtherText,
+    );
+    await _experiments.update(updated);
+    currentExperiment = updated;
+    AppLogger.instance.experiment(
+      'Reels duygu kaydı: $joined'
+      '${moodOtherText != null && moodOtherText.isNotEmpty ? ' ($moodOtherText)' : ''}',
     );
   }
 
@@ -489,8 +511,8 @@ class ExperimentSessionService {
     isRunning = false;
     currentParticipant = null;
     currentExperiment = null;
-    currentPhase = 'baseline';
-    currentStepName = 'baseline';
+    currentPhase = 'reels';
+    currentStepName = 'reelsBriefing';
     readingPhase = false;
     buffer.clear();
   }

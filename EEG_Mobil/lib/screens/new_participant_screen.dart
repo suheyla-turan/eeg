@@ -319,8 +319,7 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
             const SizedBox(height: 12),
             Text(
               'Tam akış: EEG bağlantısı → bilgilendirme → '
-              'baseline (30 sn) → Reels (10 dk) → metin (10 dk) → '
-              'analiz → sonuçlar.',
+              'Reels (10 dk) → metin (10 dk) → analiz → sonuçlar.',
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.secondary(context),
@@ -331,12 +330,17 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: exp.selectedTextId,
+                isExpanded: true,
                 decoration: _decoration('Okuma metni'),
                 items: exp.texts
                     .map(
                       (t) => DropdownMenuItem(
                         value: t.textId,
-                        child: Text(t.title),
+                        child: Text(
+                          t.title,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                     )
                     .toList(),
@@ -348,12 +352,17 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: exp.selectedTextId,
+              isExpanded: true,
               decoration: _decoration('Metin seçin'),
               items: exp.texts
                   .map(
                     (t) => DropdownMenuItem(
                       value: t.textId,
-                      child: Text(t.title),
+                      child: Text(
+                        t.title,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
                   )
                   .toList(),

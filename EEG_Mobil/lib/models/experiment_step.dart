@@ -9,7 +9,7 @@ enum ExperimentStep {
   /// Genel deney bilgilendirme.
   experimentBriefing,
 
-  /// 30 sn baseline (+ işareti).
+  /// (Kaldırıldı) Eski checkpoint uyumluluğu için tutuluyor.
   baseline,
 
   /// Reels öncesi 15 sn bilgilendirme.

@@ -11,7 +11,7 @@ import '../../providers/experiment_provider.dart';
 import '../../services/experiment_manager.dart';
 import '../../services/video_feed_scheduler.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/forward_only_scroll_physics.dart';
+import '../../widgets/demo_skip_button.dart';
 
 /// Instagram Reels mantığında 10 dakikalık video deneyi.
 class ReelsStepScreen extends StatefulWidget {
@@ -23,6 +23,9 @@ class ReelsStepScreen extends StatefulWidget {
 
 class _ReelsStepScreenState extends State<ReelsStepScreen> {
   final _pageController = PageController();
+
+  /// Aktif + komşu videolar (geri/ileri anında geçiş için).
+  final Map<int, VideoPlayerController> _controllers = {};
 
   Timer? _experimentTimer;
   Timer? _uiTimer;
@@ -43,8 +46,11 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
   Duration _lastPosition = Duration.zero;
   VoidCallback? _positionListener;
 
-  VideoPlayerController? _controller;
   bool _isPlaying = true;
+  bool _switching = false;
+  int? _pendingIndex;
+
+  VideoPlayerController? get _controller => _controllers[_currentIndex];
 
   @override
   void initState() {
@@ -58,7 +64,10 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
     _experimentTimer?.cancel();
     _uiTimer?.cancel();
     _detachPositionListener();
-    _controller?.dispose();
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    _controllers.clear();
     _pageController.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -85,7 +94,6 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
         return;
       }
 
-      // Tur 1: rastgele sıra. Sonraki turlar kullanıcı tüm videoları bitirince eklenir.
       _feed = VideoFeedScheduler(_videos);
 
       _sessionStartedAt = DateTime.now();
@@ -132,11 +140,80 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
     _positionListener = null;
   }
 
+  Future<VideoPlayerController> _createController(String url) async {
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    try {
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.setVolume(1);
+      return controller;
+    } catch (_) {
+      await controller.dispose();
+      rethrow;
+    }
+  }
+
+  Future<void> _evictFarControllers(int center) async {
+    // ±2 komşu tutulur — hızlı ileri/geri kaydırma için.
+    final keep = <int>{
+      for (var i = center - 2; i <= center + 2; i++) i,
+    };
+    final toRemove =
+        _controllers.keys.where((i) => !keep.contains(i)).toList();
+    for (final i in toRemove) {
+      final c = _controllers.remove(i);
+      await c?.dispose();
+    }
+  }
+
+  bool _isNearCurrent(int index) => (index - _currentIndex).abs() <= 2;
+
+  Future<void> _ensureCached(int index) async {
+    final feed = _feed;
+    if (feed == null || index < 0 || !mounted || _finishing) return;
+    if (_controllers.containsKey(index) &&
+        _controllers[index]!.value.isInitialized) {
+      return;
+    }
+
+    feed.ensureCapacity(index + 1);
+    final video = feed.at(index);
+    final url = video.storageUrl.trim();
+    if (url.isEmpty) return;
+
+    try {
+      final controller = await _createController(url);
+      if (!mounted || _finishing || !_isNearCurrent(index)) {
+        await controller.dispose();
+        return;
+      }
+      final existing = _controllers[index];
+      if (existing != null && existing.value.isInitialized) {
+        await controller.dispose();
+        return;
+      }
+      await existing?.dispose();
+      _controllers[index] = controller;
+      if (mounted) setState(() {});
+    } catch (e, st) {
+      AppLogger.instance.error(
+        'Reels preload başarısız: ${video.title}',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  void _preloadNeighbors(int index) {
+    for (final i in [index - 2, index - 1, index + 1, index + 2]) {
+      if (i >= 0) unawaited(_ensureCached(i));
+    }
+  }
+
   Future<void> _openVideoAt(int index, {int attempt = 0}) async {
     final feed = _feed;
-    if (feed == null || _videos.isEmpty) return;
+    if (feed == null || _videos.isEmpty || index < 0 || _finishing) return;
 
-    // Bozuk URL'lerde sonsuz döngüyü engelle — en fazla bir tur dene.
     if (attempt >= feed.sourceCount) {
       AppLogger.instance.error(
         'Reels: hiçbir video açılamadı (${feed.sourceCount} deneme)',
@@ -149,76 +226,91 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
       return;
     }
 
-    // Sonraki tur(lar) için kapasite: kullanıcı kaydırmadan önce hazır olsun.
     feed.ensureCapacity(index + feed.sourceCount + 1);
-
-    _detachPositionListener();
-    final previous = _controller;
-    _controller = null;
-    await previous?.dispose();
 
     final video = feed.at(index);
     final url = video.storageUrl.trim();
     if (url.isEmpty) {
-      await _openVideoAt(index + 1, attempt: attempt + 1);
+      final next = index >= _currentIndex ? index + 1 : index - 1;
+      if (next < 0) return;
+      await _openVideoAt(next, attempt: attempt + 1);
       return;
     }
 
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-
-    try {
-      await controller.initialize();
-      // Kullanıcı kaydırmadan otomatik geçiş yok — video kendi içinde döner.
-      await controller.setLooping(true);
-      await controller.setVolume(1);
-      await controller.play();
-
-      _replayCount = 0;
-      _lastPosition = Duration.zero;
-      _positionListener = () {
-        if (!controller.value.isInitialized) return;
-        final pos = controller.value.position;
-        // Loop algılama: pozisyon ani olarak başa döner.
-        // Bu yalnızca istatistik içindir; sonraki videoya geçirmez.
-        if (_lastPosition > const Duration(seconds: 1) &&
-            pos < const Duration(milliseconds: 400)) {
-          _replayCount++;
+    VideoPlayerController controller;
+    final cached = _controllers[index];
+    if (cached != null && cached.value.isInitialized) {
+      controller = cached;
+    } else {
+      try {
+        controller = await _createController(url);
+        if (!mounted || _finishing) {
+          await controller.dispose();
+          return;
         }
-        _lastPosition = pos;
-      };
-      controller.addListener(_positionListener!);
-
-      if (!mounted) {
-        await controller.dispose();
+        // Hızlı kaydırmada hedef değiştiyse bu sonucu at.
+        if (_pendingIndex != null && _pendingIndex != index) {
+          await controller.dispose();
+          return;
+        }
+        await _controllers[index]?.dispose();
+        _controllers[index] = controller;
+      } catch (e, st) {
+        AppLogger.instance.error(
+          'Reels video açılamadı: ${video.title}',
+          error: e,
+          stackTrace: st,
+        );
+        if (!mounted) return;
+        final next = index >= _currentIndex ? index + 1 : index - 1;
+        if (next < 0) return;
+        await _openVideoAt(next, attempt: attempt + 1);
         return;
       }
-
-      AppLogger.instance.experiment(
-        'Reels video oynuyor: ${video.title} (${video.videoId})',
-      );
-
-      setState(() {
-        _controller = controller;
-        _currentIndex = index;
-        _videoStartedAt = DateTime.now();
-        _isPlaying = true;
-        _loadError = null;
-      });
-
-      if (_pageController.hasClients &&
-          _pageController.page?.round() != index) {
-        _pageController.jumpToPage(index);
-      }
-    } catch (e, st) {
-      await controller.dispose();
-      AppLogger.instance.error(
-        'Reels video açılamadı: ${video.title}',
-        error: e,
-        stackTrace: st,
-      );
-      if (!mounted) return;
-      await _openVideoAt(index + 1, attempt: attempt + 1);
     }
+
+    _detachPositionListener();
+
+    // Eski aktif videoyu duraklat (cache'de kalsın — geri dönüş anında hazır).
+    final oldIndex = _currentIndex;
+    final old = _controllers[oldIndex];
+    if (old != null && old != controller && old.value.isPlaying) {
+      unawaited(old.pause());
+    }
+
+    _replayCount = 0;
+    _lastPosition = Duration.zero;
+    _positionListener = () {
+      if (!controller.value.isInitialized) return;
+      final pos = controller.value.position;
+      if (_lastPosition > const Duration(seconds: 1) &&
+          pos < const Duration(milliseconds: 400)) {
+        _replayCount++;
+      }
+      _lastPosition = pos;
+    };
+    controller.addListener(_positionListener!);
+
+    // Önce UI'ı güncelle, play'i bekletme — geçiş anında takılma olmasın.
+    setState(() {
+      _currentIndex = index;
+      _videoStartedAt = DateTime.now();
+      _isPlaying = true;
+      _loadError = null;
+    });
+
+    unawaited(() async {
+      try {
+        await controller.play();
+      } catch (_) {}
+    }());
+
+    AppLogger.instance.experiment(
+      'Reels video oynuyor: ${video.title} (${video.videoId})',
+    );
+
+    unawaited(_evictFarControllers(index));
+    _preloadNeighbors(index);
   }
 
   Future<void> _recordCurrentWatch({required DateTime transitionTime}) async {
@@ -234,6 +326,7 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
     final percent = durationSec <= 0
         ? 0.0
         : (watchedSec / durationSec * 100).clamp(0, 100).toDouble();
+    final replayCount = _replayCount;
 
     await context.read<ExperimentProvider>().manager.saveWatchEvent(
           videoId: video.videoId,
@@ -241,23 +334,39 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
           endTime: end,
           watchDurationSeconds: watchedSec,
           percentWatched: percent,
-          replayCount: _replayCount,
+          replayCount: replayCount,
           transitionTime: transitionTime,
           category: video.category,
         );
   }
 
   Future<void> _onPageChanged(int index) async {
-    if (index <= _currentIndex) {
-      // Geriye dönüş yok; sıra ileri (rastgele feed) üzerinden ilerler.
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(_currentIndex);
-      }
+    if (index == _currentIndex && !_switching) return;
+
+    // Hızlı kaydırmada son hedefi işle; ara geçişleri atlama.
+    if (_switching) {
+      _pendingIndex = index;
       return;
     }
-    final now = DateTime.now();
-    await _recordCurrentWatch(transitionTime: now);
-    await _openVideoAt(index);
+
+    _switching = true;
+    try {
+      var target = index;
+      while (true) {
+        if (target != _currentIndex) {
+          unawaited(_recordCurrentWatch(transitionTime: DateTime.now()));
+          await _openVideoAt(target);
+        }
+        if (_pendingIndex == null || _pendingIndex == _currentIndex) {
+          _pendingIndex = null;
+          break;
+        }
+        target = _pendingIndex!;
+        _pendingIndex = null;
+      }
+    } finally {
+      _switching = false;
+    }
   }
 
   Future<void> _togglePlayPause() async {
@@ -278,13 +387,25 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
     _experimentTimer?.cancel();
     _uiTimer?.cancel();
 
+    _detachPositionListener();
+
+    // VideoPlayer hâlâ ağaçtayken dispose edilirse
+    // "used after being disposed" hatası oluşur. Önce referansları
+    // kopar, bir frame bekle, sonra dispose et.
+    final controllers = List<VideoPlayerController>.from(_controllers.values);
+    _controllers.clear();
+    if (mounted) setState(() {});
+
     final now = DateTime.now();
     await _recordCurrentWatch(transitionTime: now);
+    await WidgetsBinding.instance.endOfFrame;
 
-    await _controller?.pause();
-    _detachPositionListener();
-    await _controller?.dispose();
-    _controller = null;
+    for (final c in controllers) {
+      try {
+        await c.pause();
+      } catch (_) {}
+      await c.dispose();
+    }
 
     if (!mounted) return;
     context.read<ExperimentProvider>().manager.onReelsFinished();
@@ -351,8 +472,9 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
   @override
   Widget build(BuildContext context) {
     final sampleCount = context.watch<ExperimentProvider>().sampleCount;
+    final topPad = MediaQuery.viewPaddingOf(context).top;
 
-    if (_loading || _cancelling) {
+    if (_loading || _cancelling || _finishing) {
       return const PopScope(
         canPop: false,
         child: Scaffold(
@@ -404,24 +526,25 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
             PageView.builder(
               controller: _pageController,
               scrollDirection: Axis.vertical,
-              physics: const ForwardOnlyScrollPhysics(),
+              allowImplicitScrolling: true,
               onPageChanged: _onPageChanged,
               itemBuilder: (context, index) {
                 final feed = _feed!;
                 feed.ensureCapacity(index + 1);
-                final video = feed.at(index);
-                final isActive = index == _currentIndex;
+                final pageController = _controllers[index];
                 return _ReelPage(
-                  video: video,
-                  controller: isActive ? _controller : null,
-                  isPlaying: _isPlaying,
+                  controller: pageController,
+                  isPlaying: index == _currentIndex && _isPlaying,
                   onTap: _togglePlayPause,
                 );
               },
             ),
-            SafeArea(
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                padding: EdgeInsets.fromLTRB(12, topPad + 8, 12, 0),
                 child: Row(
                   children: [
                     _Chip(text: _formatRemaining()),
@@ -448,6 +571,14 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: DemoSkipButton(
+                label: 'Videoyu Geç',
+                onPressed: _finishing ? null : _finishReels,
               ),
             ),
           ],
@@ -484,13 +615,11 @@ class _Chip extends StatelessWidget {
 
 class _ReelPage extends StatelessWidget {
   const _ReelPage({
-    required this.video,
     required this.controller,
     required this.isPlaying,
     required this.onTap,
   });
 
-  final VideoContent video;
   final VideoPlayerController? controller;
   final bool isPlaying;
   final VoidCallback onTap;
@@ -511,13 +640,10 @@ class _ReelPage extends StatelessWidget {
                     child: SizedBox(
                       width: controller!.value.size.width,
                       height: controller!.value.size.height,
-                      // Seek kontrolü yok — yalnızca VideoPlayer yüzeyi.
                       child: VideoPlayer(controller!),
                     ),
                   )
-                : const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
+                : const SizedBox.shrink(),
           ),
           if (!isPlaying)
             const Center(
@@ -527,44 +653,6 @@ class _ReelPage extends StatelessWidget {
                 size: 72,
               ),
             ),
-          Positioned(
-            left: 16,
-            right: 72,
-            bottom: 40,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (video.category.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      video.category,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                Text(
-                  video.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

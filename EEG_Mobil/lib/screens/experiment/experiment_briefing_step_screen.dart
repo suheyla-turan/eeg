@@ -44,9 +44,14 @@ class _ExperimentBriefingStepScreenState
     super.dispose();
   }
 
-  void _continue() {
+  Future<void> _continue() async {
     _timer?.cancel();
-    context.read<ExperimentProvider>().manager.proceedFromBriefing();
+    final manager = context.read<ExperimentProvider>().manager;
+    final ok = await manager.proceedFromBriefing();
+    if (!mounted || ok) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(manager.errorMessage ?? 'Kayıt başlatılamadı')),
+    );
   }
 
   @override
@@ -80,7 +85,6 @@ class _ExperimentBriefingStepScreenState
                   child: Text(
                     'Bu deney sırasında EEG cihazınız takılı kalacaktır.\n\n'
                     'Sırasıyla:\n'
-                    '• Kısa bir baseline ölçümü\n'
                     '• Yaklaşık 10 dakika sosyal medya benzeri kısa videolar\n'
                     '• Yaklaşık 10 dakika metin okuma\n\n'
                     'Lütfen talimatları dikkatle izleyin ve doğal davranın.\n\n'

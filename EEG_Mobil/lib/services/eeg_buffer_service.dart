@@ -6,7 +6,7 @@ import '../data/mock_eeg.dart';
 /// Aşamalar değişse bile kayıt kesilmez; yalnızca [phase] etiketi güncellenir.
 class EegBufferService {
   final List<Map<String, dynamic>> _samples = [];
-  String _currentPhase = 'baseline';
+  String _currentPhase = 'reels';
 
   int get sampleCount => _samples.length;
 
@@ -19,13 +19,13 @@ class EegBufferService {
 
   void clear() {
     _samples.clear();
-    _currentPhase = 'baseline';
+    _currentPhase = 'reels';
   }
 
   /// Crash recovery: kaydedilmiş örnekleri geri yükler.
   void restoreSamples(
     List<Map<String, dynamic>> samples, {
-    String phase = 'baseline',
+    String phase = 'reels',
   }) {
     _samples
       ..clear()

@@ -7,7 +7,6 @@ import '../../models/experiment_step.dart';
 import '../../providers/experiment_provider.dart';
 import '../../theme/app_colors.dart';
 import 'analysis_step_screen.dart';
-import 'baseline_step_screen.dart';
 import 'eeg_connection_step_screen.dart';
 import 'experiment_briefing_step_screen.dart';
 import 'experiment_results_step_screen.dart';
@@ -85,8 +84,8 @@ class _ExperimentFlowScreenState extends State<ExperimentFlowScreen> {
         return const EegConnectionStepScreen();
       case ExperimentStep.experimentBriefing:
         return const ExperimentBriefingStepScreen();
+      // Eski checkpoint'ler için: baseline kaldırıldı → Reels bilgilendirme.
       case ExperimentStep.baseline:
-        return const BaselineStepScreen();
       case ExperimentStep.reelsBriefing:
         return const ReelsBriefingStepScreen();
       case ExperimentStep.reels:

@@ -62,8 +62,10 @@ class _TextBriefingStepScreenState extends State<TextBriefingStepScreen> {
                   title: 'Okuma aşaması',
                   icon: Icons.menu_book_outlined,
                   child: Text(
-                    'Birazdan yaklaşık 10 dakika sürecek bir metin okuyacaksınız.\n\n'
-                    'Lütfen metni dikkatlice okuyunuz.\n\n'
+                    'Birazdan yaklaşık 10 dakika sürecek bir metin okuma '
+                    'oturumu başlayacak.\n\n'
+                    'Lütfen metni dikkatlice okuyunuz. Birden fazla metin '
+                    'olabilir; duygu sorusu yalnızca 10 dakika bitince sorulur.\n\n'
                     'Okuma boyunca EEG kaydı devam edecektir.',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           height: 1.55,

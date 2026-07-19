@@ -47,7 +47,9 @@ class TextQuizResponse {
   final String experimentId;
   final String textId;
   final List<TextQuizAnswer> answers;
+  /// Geriye uyumluluk: seçilen duyguların virgülle birleşik hali.
   final String moodOption;
+  final List<String> moodOptions;
   final String? moodOtherText;
   final DateTime createdAt;
 
@@ -57,17 +59,25 @@ class TextQuizResponse {
     required this.textId,
     required this.answers,
     required this.moodOption,
+    this.moodOptions = const [],
     this.moodOtherText,
     required this.createdAt,
   });
 
   Map<String, dynamic> toMap() {
+    final options = moodOptions.isNotEmpty
+        ? moodOptions
+        : (moodOption.isEmpty
+            ? <String>[]
+            : moodOption.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList());
+    final joined = options.isNotEmpty ? options.join(', ') : moodOption;
     return {
       'responseId': responseId,
       'experimentId': experimentId,
       'textId': textId,
       'answers': answers.map((a) => a.toMap()).toList(),
-      'moodOption': moodOption,
+      'moodOption': joined,
+      'moodOptions': options,
       if (moodOtherText != null && moodOtherText!.isNotEmpty)
         'moodOtherText': moodOtherText,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -83,12 +93,25 @@ class TextQuizResponse {
             .toList()
         : <TextQuizAnswer>[];
 
+    final legacy = map['moodOption'] as String? ?? '';
+    final rawOptions = map['moodOptions'];
+    final options = rawOptions is List
+        ? rawOptions.map((e) => e.toString()).where((e) => e.isNotEmpty).toList()
+        : (legacy.isEmpty
+            ? <String>[]
+            : legacy
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList());
+
     return TextQuizResponse(
       responseId: id ?? map['responseId'] as String? ?? '',
       experimentId: map['experimentId'] as String? ?? '',
       textId: map['textId'] as String? ?? '',
       answers: answers,
-      moodOption: map['moodOption'] as String? ?? '',
+      moodOption: options.isNotEmpty ? options.join(', ') : legacy,
+      moodOptions: options,
       moodOtherText: map['moodOtherText'] as String?,
       createdAt: _readDate(map['createdAt']),
     );

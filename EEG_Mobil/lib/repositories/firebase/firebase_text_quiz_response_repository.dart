@@ -26,6 +26,7 @@ class FirebaseTextQuizResponseRepository
         textId: response.textId,
         answers: response.answers,
         moodOption: response.moodOption,
+        moodOptions: response.moodOptions,
         moodOtherText: response.moodOtherText,
         createdAt: response.createdAt,
       );
