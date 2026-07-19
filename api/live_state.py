@@ -24,6 +24,7 @@ CHANNELS = [
     "AF4",
 ]
 
+# disconnected | connecting | device_found | device_not_worn | connected
 _lock = threading.Lock()
 
 _state: dict[str, Any] = {
@@ -35,9 +36,17 @@ _state: dict[str, Any] = {
     "sensor_count": 14,
     "contact_quality": {ch: 0 for ch in CHANNELS},
     "overall_quality": 0,
+    "eeg": None,
     "updated_at": None,
     "error": None,
 }
+
+
+def _empty_eeg(timestamp: float | None = None) -> dict[str, Any]:
+    sample: dict[str, Any] = {"timestamp": timestamp or time.time()}
+    for ch in CHANNELS:
+        sample[ch] = 0.0
+    return sample
 
 
 def set_collecting(active: bool) -> None:
@@ -58,11 +67,26 @@ def set_connecting() -> None:
         _state["error"] = None
 
 
+def set_device_found(headset_id: str | None = None) -> None:
+    with _lock:
+        _state["connection"] = "device_found"
+        _state["error"] = None
+        if headset_id:
+            _state["headset_id"] = headset_id
+
+
+def set_device_not_worn(error: str | None = None) -> None:
+    with _lock:
+        _state["connection"] = "device_not_worn"
+        _state["error"] = error or "Cihaz takılı değil — sensör teması yok"
+
+
 def set_disconnected(error: str | None = None) -> None:
     """Bağlantı koptu — collecting bayrağı korunur (Durdur cihazı kesmez)."""
     with _lock:
         _state["connection"] = "disconnected"
         _state["updated_at"] = None
+        _state["eeg"] = None
         if error:
             _state["error"] = error
         else:
@@ -99,8 +123,17 @@ def update_from_dev(dev: list) -> None:
     if len(sensors) > 14:
         overall = int(sensors[14])
 
+    max_cq = max(contact.values()) if contact else 0
+    worn = overall > 0 or max_cq > 0
+
     with _lock:
-        _state["connection"] = "connected"
+        if worn:
+            _state["connection"] = "connected"
+            _state["error"] = None
+        else:
+            _state["connection"] = "device_not_worn"
+            _state["error"] = "Cihaz takılı değil — sensör teması yok"
+
         _state["battery_percent"] = battery_percent
         _state["signal"] = signal
         _state["battery_level"] = battery_level
@@ -108,7 +141,36 @@ def update_from_dev(dev: list) -> None:
         _state["overall_quality"] = overall
         _state["sensor_count"] = 14
         _state["updated_at"] = time.time()
-        _state["error"] = None
+
+
+def update_from_eeg(eeg: list, timestamp: float | None = None) -> None:
+    """
+    Cortex EEG stream (EPOC / EPOC+ tipik kolonlar):
+      [0] COUNTER
+      [1] INTERPOLATED
+      [2:16] AF3 … AF4 (14 kanal)
+      …
+    """
+    ts = float(timestamp) if timestamp is not None else time.time()
+    sample = _empty_eeg(ts)
+
+    # Kanal değerleri genelde index 2'den başlar
+    offset = 2 if len(eeg) >= 16 else 0
+    for i, ch in enumerate(CHANNELS):
+        idx = offset + i
+        if idx < len(eeg):
+            try:
+                sample[ch] = float(eeg[idx])
+            except (TypeError, ValueError):
+                sample[ch] = 0.0
+
+    with _lock:
+        _state["eeg"] = sample
+        _state["updated_at"] = time.time()
+        # EEG paketi geldiyse cihaz en azından stream veriyor
+        if _state["connection"] in ("device_found", "connecting"):
+            _state["connection"] = "connected"
+            _state["error"] = None
 
 
 # Son Cortex paketinden bu kadar sn geçtiyse bağlantı kopmuş say
@@ -121,7 +183,7 @@ def snapshot() -> dict[str, Any]:
 
     updated_at = state.get("updated_at")
     if (
-        state.get("connection") == "connected"
+        state.get("connection") in ("connected", "device_found", "device_not_worn")
         and updated_at is not None
         and (time.time() - float(updated_at)) > STALE_AFTER_SEC
     ):
@@ -130,5 +192,8 @@ def snapshot() -> dict[str, Any]:
             f"Cortex paketi {STALE_AFTER_SEC:.0f}s+ gelmedi "
             "(cihaz kapalı veya stream koptu)"
         )
+
+    if state.get("eeg") is None:
+        state["eeg"] = _empty_eeg(updated_at)
 
     return state

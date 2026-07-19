@@ -1,11 +1,14 @@
 """
 EEG canlı veri API'si.
 
-Emotiv Cortex'ten gelen DEV stream'i Flutter uygulamasına sunar.
+Emotiv Cortex'ten gelen DEV + EEG stream'lerini Flutter uygulamasına sunar.
 
 Başlangıçta Cortex'e otomatik bağlanır (requestAccess → authorize →
-queryHeadsets → createSession → subscribe DEV). Cihaz durumu (pil, sinyal,
-contact quality) sürekli güncellenir.
+queryHeadsets → createSession → subscribe DEV+EEG). Cihaz durumu (pil, sinyal,
+contact quality) ve 14 kanal EEG sürekli güncellenir.
+
+Bağlantı durumları:
+  disconnected | connecting | device_found | device_not_worn | connected
 
 Veri toplama (recording/processing) Flutter'dan
 POST /collection/start ve /collection/stop ile kontrol edilir.

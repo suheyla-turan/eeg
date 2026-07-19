@@ -1,95 +1,205 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/ai_analysis_screen.dart';
-import 'screens/live_eeg_screen.dart';
-import 'screens/live_stream_screen.dart';
-import 'screens/sensor_info_screen.dart';
-import 'theme/app_colors.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
 
-void main() {
+import 'core/app_dependencies.dart';
+import 'core/app_logger.dart';
+import 'core/app_messenger.dart';
+import 'firebase_options.dart';
+import 'providers/eeg_provider.dart';
+import 'providers/experiment_provider.dart';
+import 'providers/history_provider.dart';
+import 'providers/participant_provider.dart';
+import 'providers/recovery_provider.dart';
+import 'providers/settings_provider.dart';
+import 'providers/text_content_provider.dart';
+import 'providers/video_content_provider.dart';
+import 'screens/app_shell.dart';
+import 'services/settings_service.dart';
+import 'theme/app_theme.dart';
+import 'widgets/recovery_dialog.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('tr');
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const EegMobilApp());
+
+  var firebaseReady = false;
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    firebaseReady = true;
+    AppLogger.instance.firebase('Firebase başlatıldı');
+  } catch (e, st) {
+    AppLogger.instance.error(
+      'Firebase başlatılamadı',
+      error: e,
+      stackTrace: st,
+    );
+  }
+
+  final settings = await SettingsService.create();
+  final deps = AppDependencies.create();
+
+  runApp(
+    EegMobilApp(
+      dependencies: deps,
+      settingsService: settings,
+      firebaseReady: firebaseReady,
+    ),
+  );
 }
 
-class EegMobilApp extends StatelessWidget {
-  const EegMobilApp({super.key});
+class EegMobilApp extends StatefulWidget {
+  const EegMobilApp({
+    super.key,
+    required this.dependencies,
+    required this.settingsService,
+    required this.firebaseReady,
+  });
+
+  final AppDependencies dependencies;
+  final SettingsService settingsService;
+  final bool firebaseReady;
+
+  @override
+  State<EegMobilApp> createState() => _EegMobilAppState();
+}
+
+class _EegMobilAppState extends State<EegMobilApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.dependencies.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Arka plana / kapanmaya giderken checkpoint session dispose ile yazılır.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      final session = widget.dependencies.experimentSessionService;
+      if (session.isRunning) {
+        // dispose timer zaten periyodik kaydeder; ekstra flush için
+        AppLogger.instance.experiment('Uygulama arka plana alındı — checkpoint aktif');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'EEG Mobil',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.light,
+    final deps = widget.dependencies;
+
+    return MultiProvider(
+      providers: [
+        Provider<AppDependencies>.value(value: deps),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(
+            settingsService: widget.settingsService,
+            eegService: deps.eegService,
+            firebaseReady: widget.firebaseReady,
+          ),
         ),
-        scaffoldBackgroundColor: AppColors.bg,
-        fontFamily: 'Roboto',
+        ChangeNotifierProvider(
+          create: (_) => EegProvider(eegService: deps.eegService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ParticipantProvider(
+            repository: deps.participantRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ExperimentProvider(
+            sessionService: deps.experimentSessionService,
+            videoRepository: deps.videoRepository,
+            textRepository: deps.textRepository,
+            watchEventRepository: deps.videoWatchEventRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RecoveryProvider(
+            experimentRepository: deps.experimentRepository,
+            participantRepository: deps.participantRepository,
+            sessionService: deps.experimentSessionService,
+          )..checkOnStartup(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => VideoContentProvider(
+            repository: deps.videoRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => TextContentProvider(
+            repository: deps.textRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HistoryProvider(
+            participantRepository: deps.participantRepository,
+            experimentRepository: deps.experimentRepository,
+          ),
+        ),
+      ],
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            title: 'EEG Araştırma',
+            debugShowCheckedModeBanner: false,
+            scaffoldMessengerKey: AppMessenger.key,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: settings.themeMode,
+            home: const _AppHome(),
+          );
+        },
       ),
-      home: const HomeShell(),
     );
   }
 }
 
-class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+class _AppHome extends StatefulWidget {
+  const _AppHome();
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
+  State<_AppHome> createState() => _AppHomeState();
 }
 
-class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
+class _AppHomeState extends State<_AppHome> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeShowRecovery();
+    });
+  }
 
-  static const _pages = [
-    LiveEegScreen(),
-    LiveStreamScreen(),
-    AiAnalysisScreen(),
-    SensorInfoScreen(),
-  ];
+  Future<void> _maybeShowRecovery() async {
+    final recovery = context.read<RecoveryProvider>();
+    // Recovery check bitene kadar kısa bekle
+    var waits = 0;
+    while (recovery.checking && waits < 40) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      waits++;
+    }
+    if (!mounted) return;
+    await showRecoveryDialogIfNeeded(context);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primarySoft,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        height: 68,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.monitor_heart_outlined),
-            selectedIcon: Icon(Icons.monitor_heart),
-            label: 'Durum',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.ssid_chart_outlined),
-            selectedIcon: Icon(Icons.ssid_chart),
-            label: 'Akış',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.psychology_outlined),
-            selectedIcon: Icon(Icons.psychology),
-            label: 'AI',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.info_outline),
-            selectedIcon: Icon(Icons.info),
-            label: 'Sensör',
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const AppShell();
 }

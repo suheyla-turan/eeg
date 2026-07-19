@@ -20,4 +20,41 @@ class AppColors {
   static const qualityFair = Color(0xFFD4A017);
   static const qualityPoor = Color(0xFFC44B4B);
   static const tabInactive = Color(0xFF8A9BA5);
+
+  // Koyu tema
+  static const darkBg = Color(0xFF10181C);
+  static const darkSurface = Color(0xFF1C282E);
+  static const darkSurfaceMuted = Color(0xFF26343A);
+  static const darkBorder = Color(0xFF3A4C54);
+  static const darkText = Color(0xFFF2F7F9);
+  static const darkTextSecondary = Color(0xFFB8C9D1);
+  static const darkTextMuted = Color(0xFF8FA3AD);
+  static const darkPrimarySoft = Color(0xFF1A3F48);
+
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color pageBg(BuildContext context) =>
+      isDark(context) ? darkBg : bg;
+
+  static Color card(BuildContext context) =>
+      isDark(context) ? darkSurface : surface;
+
+  static Color muted(BuildContext context) =>
+      isDark(context) ? darkSurfaceMuted : surfaceMuted;
+
+  static Color line(BuildContext context) =>
+      isDark(context) ? darkBorder : border;
+
+  static Color foreground(BuildContext context) =>
+      isDark(context) ? darkText : text;
+
+  static Color secondary(BuildContext context) =>
+      isDark(context) ? darkTextSecondary : textSecondary;
+
+  static Color hint(BuildContext context) =>
+      isDark(context) ? darkTextMuted : textMuted;
+
+  static Color softPrimary(BuildContext context) =>
+      isDark(context) ? darkPrimarySoft : primarySoft;
 }

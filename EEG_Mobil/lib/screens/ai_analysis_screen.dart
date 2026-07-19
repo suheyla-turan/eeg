@@ -1,72 +1,27 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../analysis/emotion_analyzer.dart';
-import '../data/mock_eeg.dart';
-import '../services/eeg_api_service.dart';
+import '../providers/eeg_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/emotion_bar.dart';
 import '../widgets/section_card.dart';
 import '../widgets/status_pill.dart';
 
-class AiAnalysisScreen extends StatefulWidget {
+class AiAnalysisScreen extends StatelessWidget {
   const AiAnalysisScreen({super.key});
 
   @override
-  State<AiAnalysisScreen> createState() => _AiAnalysisScreenState();
-}
-
-class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
-  final _api = EegApiService();
-  Timer? _timer;
-  LiveEegState _live = LiveEegState.disconnected();
-  EmotionAnalysis? _analysis;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-    _timer = Timer.periodic(const Duration(milliseconds: 700), (_) => _refresh());
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _api.dispose();
-    super.dispose();
-  }
-
-  Future<void> _refresh() async {
-    try {
-      final live = await _api.fetchLive();
-      if (!mounted) return;
-      setState(() {
-        _live = live;
-        _analysis = EmotionAnalyzer.analyze(live);
-        _error = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      final offline = LiveEegState.disconnected(error: e.toString());
-      setState(() {
-        _live = offline;
-        _analysis = EmotionAnalyzer.analyze(offline);
-        _error = 'Canlı veri yok — ${EegApiConfig.displayUrl}';
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final analysis = _analysis ?? EmotionAnalyzer.analyze(_live);
+    final eeg = context.watch<EegProvider>();
+    final live = eeg.live;
+    final analysis = EmotionAnalyzer.analyze(live);
     final dominant = analysis.dominant;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _refresh,
+          onRefresh: eeg.reconnect,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -90,7 +45,7 @@ class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              if (_error != null)
+              if (live.error != null && !eeg.isConnected)
                 Container(
                   margin: const EdgeInsets.only(bottom: 14),
                   padding: const EdgeInsets.all(12),
@@ -99,7 +54,7 @@ class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _error!,
+                    live.error!,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.warning,
@@ -110,8 +65,8 @@ class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
               SectionCard(
                 title: 'Anlık Durum',
                 subtitle: analysis.hasSignal
-                    ? 'Canlı temas kalitesi + bölge anlamları'
-                    : 'Zayıf / yok sinyal',
+                    ? 'Canlı temas kalitesi + bölge anlamları · ${live.connectionLabelTr}'
+                    : 'Zayıf / yok sinyal · ${live.connectionLabelTr}',
                 right: StatusPill(
                   label: analysis.hasSignal ? 'Canlı' : 'Bekleniyor',
                   tone: analysis.hasSignal
@@ -222,8 +177,7 @@ class _AiAnalysisScreenState extends State<AiAnalysisScreen> {
                     Text(
                       'AF3/F3/F7 (sol frontal) → mutlu · AF4/F4/F8 (sağ frontal) → üzgün · '
                       'F8/T8 → sinirli · O1/O2/P7/P8 → sakin · AF/FC → stresli · '
-                      'AF3/AF4/F3/F4 → odaklı. Şu an Emotiv temas kalitesi kullanılıyor; '
-                      'ileride eğitilmiş model ve band-power ile güçlendirilecek.',
+                      'AF3/AF4/F3/F4 → odaklı. Emotiv temas kalitesi + canlı EEG akışı kullanılır.',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,

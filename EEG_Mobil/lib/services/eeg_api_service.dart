@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:multicast_dns/multicast_dns.dart';
 
+import '../core/app_logger.dart';
 import '../data/mock_eeg.dart';
 
 /// mDNS / Bonjour:
@@ -15,10 +16,15 @@ import '../data/mock_eeg.dart';
 class EegApiConfig {
   static const String mdnsHost = 'eegserver.local';
   static const String serviceType = '_eeg-api._tcp.local';
-  static const int port = 8000;
+
+  /// Varsayılan port; Settings üzerinden değiştirilebilir.
+  static int port = 8000;
 
   /// Son başarılı bağlantı adresi (IP veya hostname)
   static String host = mdnsHost;
+
+  /// Settings'ten gelen manuel host (null = otomatik keşif).
+  static String? hostOverride;
 
   /// UI'da gösterilen sabit isim
   static String get displayUrl => 'http://$mdnsHost:$port';
@@ -65,7 +71,7 @@ class EegApiService {
   Future<T> _withHosts<T>(Future<T> Function(String host) request) async {
     Object? lastError;
 
-    for (final host in await _candidateHosts()) {
+    for (final host in await candidateHosts()) {
       try {
         final result = await request(host);
         _rememberHost(host);
@@ -82,13 +88,20 @@ class EegApiService {
         );
   }
 
-  Future<List<String>> _candidateHosts() async {
+  /// mDNS + yedek adresler (HTTP ve WebSocket için ortak).
+  Future<List<String>> candidateHosts() async {
     final hosts = <String>[];
+
+    // Manuel override en önde
+    final override = EegApiConfig.hostOverride;
+    if (override != null && override.isNotEmpty) {
+      hosts.add(override);
+    }
 
     if (_resolvedHost != null &&
         _resolvedAt != null &&
         DateTime.now().difference(_resolvedAt!) < const Duration(minutes: 2)) {
-      hosts.add(_resolvedHost!);
+      if (!hosts.contains(_resolvedHost)) hosts.add(_resolvedHost!);
     }
 
     final discovered = await discoverMdnsHost();
@@ -159,14 +172,16 @@ class EegApiService {
           .first;
 
       final address = ip.address.address;
-      if (kDebugMode) {
-        debugPrint('mDNS: ${EegApiConfig.mdnsHost} → $address:${srv.port}');
-      }
+      AppLogger.instance.python(
+        'mDNS: ${EegApiConfig.mdnsHost} → $address:${srv.port}',
+      );
       return address;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('mDNS keşif başarısız: $e');
-      }
+      AppLogger.instance.python(
+        'mDNS keşif başarısız',
+        level: LogLevel.warning,
+        error: e,
+      );
       return null;
     } finally {
       client.stop();

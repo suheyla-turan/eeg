@@ -95,6 +95,7 @@ class CortexClient:
         headset = result[0]
         self.headset_id = headset["id"]
         print("Headset :", self.headset_id)
+        live_state.set_device_found(self.headset_id)
 
     def create_session(self):
         request = {
@@ -113,9 +114,52 @@ class CortexClient:
         self.session_id = response["result"]["id"]
         print("Session oluşturuldu.")
 
-    def subscribe_dev(self):
+    def subscribe_streams(self):
+        """DEV (cihaz durumu) + EEG (14 kanal ham sinyal) aboneliği."""
         request = {
             "id": 5,
+            "jsonrpc": "2.0",
+            "method": "subscribe",
+            "params": {
+                "cortexToken": self.token,
+                "session": self.session_id,
+                "streams": ["dev", "eeg"],
+            },
+        }
+        self.send(request)
+        response = self.receive()
+        print(response)
+        result = response.get("result") or {}
+        success = result.get("success") or []
+        failure = result.get("failure") or []
+
+        ok_streams: set[str] = set()
+        for item in success:
+            if isinstance(item, dict):
+                name = item.get("streamName") or item.get("stream")
+                if name:
+                    ok_streams.add(str(name))
+            elif isinstance(item, str):
+                ok_streams.add(item)
+
+        if not success and not ok_streams:
+            # Kısmi başarı yok — yalnızca DEV dene
+            print("DEV+EEG aboneliği başarısız, yalnızca DEV deneniyor:", failure)
+            self._subscribe_dev_only()
+            return
+
+        if "eeg" in ok_streams:
+            print("\nDEV + EEG stream bağlandı.\n")
+        else:
+            print("\nDEV stream bağlandı (EEG yok / lisans gerekebilir).\n")
+            if failure:
+                print("EEG failure:", failure)
+
+        live_state.set_connected()
+
+    def _subscribe_dev_only(self):
+        request = {
+            "id": 6,
             "jsonrpc": "2.0",
             "method": "subscribe",
             "params": {
@@ -127,48 +171,55 @@ class CortexClient:
         self.send(request)
         response = self.receive()
         print(response)
-        result = response["result"]
-        if len(result["success"]) > 0:
-            print("\nDEV stream bağlandı.\n")
+        result = response.get("result") or {}
+        if result.get("success"):
+            print("\nDEV stream bağlandı (EEG yok).\n")
             live_state.set_connected()
         else:
-            print(result["failure"])
+            print(result.get("failure"))
             raise Exception("DEV stream aboneliği başarısız.")
 
     def listen(self):
         channels = live_state.CHANNELS + ["OVERALL"]
-        print("\nCihaz durumu dinleniyor (DEV)...\n")
-        last_dev_at = time.time()
+        print("\nCihaz durumu ve EEG dinleniyor...\n")
+        last_packet_at = time.time()
 
         while not self._stop.is_set():
             try:
                 message = self.receive()
-                if "dev" not in message:
-                    # Keepalive / diğer mesajlar — sessizlik sayacını bozma
-                    if time.time() - last_dev_at > self.SILENCE_RECONNECT_SEC:
+                has_dev = "dev" in message
+                has_eeg = "eeg" in message
+
+                if not has_dev and not has_eeg:
+                    if time.time() - last_packet_at > self.SILENCE_RECONNECT_SEC:
                         raise TimeoutError(
-                            f"DEV stream {self.SILENCE_RECONNECT_SEC}s sessiz — yeniden bağlanılıyor"
+                            f"Stream {self.SILENCE_RECONNECT_SEC}s sessiz — yeniden bağlanılıyor"
                         )
                     continue
 
-                last_dev_at = time.time()
-                battery = message["dev"][0]
-                signal = message["dev"][1]
-                sensors = message["dev"][2]
-                battery_percent = message["dev"][3]
+                last_packet_at = time.time()
 
-                live_state.update_from_dev(message["dev"])
+                if has_dev:
+                    live_state.update_from_dev(message["dev"])
+                    battery = message["dev"][0]
+                    signal = message["dev"][1]
+                    sensors = message["dev"][2]
+                    battery_percent = message["dev"][3]
 
-                print("=" * 60)
-                print(f"Batarya      : %{battery_percent}")
-                print(f"Sinyal       : {signal}")
-                print(
-                    f"Toplama      : "
-                    f"{'AÇIK' if live_state.is_collecting() else 'kapalı'}"
-                )
-                print()
-                for name, value in zip(channels, sensors):
-                    print(f"{name:<10}: {value}")
+                    print("=" * 60)
+                    print(f"Batarya      : %{battery_percent}")
+                    print(f"Sinyal       : {signal}")
+                    print(
+                        f"Toplama      : "
+                        f"{'AÇIK' if live_state.is_collecting() else 'kapalı'}"
+                    )
+                    print()
+                    for name, value in zip(channels, sensors):
+                        print(f"{name:<10}: {value}")
+
+                if has_eeg:
+                    ts = message.get("time")
+                    live_state.update_from_eeg(message["eeg"], timestamp=ts)
 
             except KeyboardInterrupt:
                 print("\nProgram sonlandırıldı.")
@@ -178,7 +229,6 @@ class CortexClient:
                     break
                 print(f"Dinleme hatası: {exc}")
                 live_state.set_disconnected(str(exc))
-                # Timeout / sessizlik → dış runner yeniden bağlansın
                 break
 
     @property
@@ -190,14 +240,13 @@ class CortexClient:
         )
 
     def start_background(self):
-        """Cortex bağlantısını arka planda başlatır (cihaz durumu / DEV stream).
+        """Cortex bağlantısını arka planda başlatır (cihaz durumu / EEG).
 
         Veri toplama (collecting) bundan bağımsızdır — API startup'ta çağrılır.
         """
         if self.is_running:
             return
 
-        # Önceki stop sonrası thread hâlâ kapanıyorsa bekle
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=2.0)
 
@@ -211,7 +260,7 @@ class CortexClient:
                     self.authorize()
                     self.query_headsets()
                     self.create_session()
-                    self.subscribe_dev()
+                    self.subscribe_streams()
                     self.listen()
                 except Exception as exc:
                     print(f"Cortex hatası: {exc}")
@@ -221,7 +270,6 @@ class CortexClient:
                         self.disconnect()
                     except Exception:
                         pass
-                # Stream koptu / headset yok → 3 sn sonra tekrar dene
                 if self._stop.wait(3):
                     break
 

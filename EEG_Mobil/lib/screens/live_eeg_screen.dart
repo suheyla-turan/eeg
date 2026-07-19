@@ -1,7 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../data/mock_eeg.dart';
+import '../providers/eeg_provider.dart';
 import '../services/eeg_api_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/brain_map.dart';
@@ -9,121 +10,45 @@ import '../widgets/contact_quality_grid.dart';
 import '../widgets/section_card.dart';
 import '../widgets/status_pill.dart';
 
-class LiveEegScreen extends StatefulWidget {
+class LiveEegScreen extends StatelessWidget {
   const LiveEegScreen({super.key});
 
   @override
-  State<LiveEegScreen> createState() => _LiveEegScreenState();
-}
-
-class _LiveEegScreenState extends State<LiveEegScreen> {
-  final _api = EegApiService();
-  Timer? _timer;
-  LiveEegState _live = LiveEegState.disconnected();
-  String? _lastError;
-  bool _loading = true;
-  bool _busy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    logApiHost();
-    _refresh();
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) => _refresh());
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _api.dispose();
-    super.dispose();
-  }
-
-  Future<void> _refresh() async {
-    try {
-      final next = await _api.fetchLive();
-      if (!mounted) return;
-      setState(() {
-        _live = next;
-        _lastError = next.error;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _live = LiveEegState.disconnected(error: e.toString());
-        _lastError = 'Python API\'ye ulaşılamadı (${EegApiConfig.displayUrl})';
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _toggleCollection() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    try {
-      if (_live.collecting) {
-        await _api.stopCollection();
-      } else {
-        await _api.startCollection();
-      }
-      await _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _lastError =
-            'Komut gönderilemedi (${EegApiConfig.displayUrl}): $e';
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _live.collecting
-                ? 'Durdurulamadı — Python API çalışıyor mu?'
-                : 'Başlatılamadı — Python API çalışıyor mu?',
-          ),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final collecting = _live.collecting;
+    final eeg = context.watch<EegProvider>();
+    final live = eeg.live;
+    final collecting = live.collecting;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _refresh,
+          onRefresh: eeg.reconnect,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Canlı EEG Durumu',
                           style: TextStyle(
-                            fontSize: 26,
+                            fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.text,
+                            color: AppColors.foreground(context),
                             letterSpacing: -0.3,
                           ),
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         Text(
-                          'Cihaz durumu otomatik; Başlat EEG kaydını açar',
+                          'WebSocket akışı otomatik; bağlı olunca veri başlar',
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                            color: AppColors.secondary(context),
                             height: 1.4,
                           ),
                         ),
@@ -132,7 +57,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
-                    onPressed: _busy ? null : _toggleCollection,
+                    onPressed: eeg.busy ? null : eeg.toggleCollection,
                     style: FilledButton.styleFrom(
                       backgroundColor:
                           collecting ? AppColors.warning : AppColors.success,
@@ -143,7 +68,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                         vertical: 12,
                       ),
                     ),
-                    icon: _busy
+                    icon: eeg.busy
                         ? const SizedBox(
                             width: 18,
                             height: 18,
@@ -161,7 +86,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
               Text(
                 collecting
                     ? 'EEG veri toplama açık'
-                    : 'Cihaz durumu canlı — Başlat yalnızca EEG kaydını açar',
+                    : 'Cihaz durumu canlı — bağlantıda otomatik akış başlar',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -169,13 +94,8 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              if (_loading)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 14),
-                  child: LinearProgressIndicator(minHeight: 3),
-                ),
-              if (_lastError != null &&
-                  _live.connection != ConnectionStatus.connected)
+              if (live.error != null &&
+                  live.connection != ConnectionStatus.connected)
                 Container(
                   margin: const EdgeInsets.only(bottom: 14),
                   padding: const EdgeInsets.all(12),
@@ -184,7 +104,7 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _lastError!,
+                    live.error!,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.danger,
@@ -192,52 +112,15 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                     ),
                   ),
                 ),
-              if (_live.connection == ConnectionStatus.connected)
-                const SizedBox.shrink()
-              else if (_live.connection == ConnectionStatus.connecting)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F0F3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Python Cortex’e bağlanıyor… Emotiv Launcher ve cihaz hazır olmalı.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                      height: 1.35,
-                    ),
-                  ),
-                )
-              else if (_lastError == null ||
-                  !_lastError!.contains('ulaşılamadı'))
-                Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFBF0D4),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _live.error ??
-                        'API açık ama headset bağlı değil. Emotiv cihazını aç.',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.warning,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
+              _ConnectionBanner(connection: live.connection, error: live.error),
               Row(
                 children: [
                   Expanded(
                     child: _StatCard(
                       label: 'Bağlantı',
                       child: StatusPill(
-                        label: _connectionLabel(_live.connection),
-                        tone: _connectionTone(_live.connection),
+                        label: live.connectionLabelTr,
+                        tone: _connectionTone(live.connection),
                       ),
                     ),
                   ),
@@ -246,11 +129,11 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                     child: _StatCard(
                       label: 'Pil',
                       child: Text(
-                        '${_live.batteryPercent}%',
-                        style: const TextStyle(
+                        '${live.batteryPercent}%',
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: AppColors.foreground(context),
                         ),
                       ),
                     ),
@@ -260,11 +143,11 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
                     child: _StatCard(
                       label: 'Sensör',
                       child: Text(
-                        '${_live.sensorCount}',
-                        style: const TextStyle(
+                        '${live.sensorCount}',
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: AppColors.foreground(context),
                         ),
                       ),
                     ),
@@ -275,24 +158,24 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
               SectionCard(
                 title: 'Beyin Haritası',
                 subtitle:
-                    'Temas kalitesine göre aktivite · sinyal ${_live.signal.toStringAsFixed(1)}',
+                    'Temas kalitesine göre aktivite · sinyal ${live.signal.toStringAsFixed(1)}',
                 child: BrainMap(
-                  quality: _live.contactQuality,
-                  bandPower: _live.bandPower,
+                  quality: live.contactQuality,
+                  bandPower: live.bandPower,
                 ),
               ),
               SectionCard(
                 title: 'Temas Kalitesi',
                 subtitle:
-                    'Emotiv contact quality (0–4) · genel ${_live.overallQuality}',
-                child: ContactQualityGrid(quality: _live.contactQuality),
+                    'Emotiv contact quality (0–4) · genel ${live.overallQuality}',
+                child: ContactQualityGrid(quality: live.contactQuality),
               ),
               Text(
-                'API: ${EegApiConfig.displayUrl}/live · 500 ms yenileme',
+                'API: ${EegApiConfig.displayUrl}/ws/live · WebSocket',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textMuted,
+                  color: AppColors.hint(context),
                   height: 1.45,
                 ),
               ),
@@ -303,26 +186,65 @@ class _LiveEegScreenState extends State<LiveEegScreen> {
     );
   }
 
-  String _connectionLabel(ConnectionStatus status) {
-    switch (status) {
-      case ConnectionStatus.connected:
-        return 'Bağlı';
-      case ConnectionStatus.connecting:
-        return 'Bağlanıyor…';
-      case ConnectionStatus.disconnected:
-        return 'Bağlı değil';
-    }
-  }
-
   StatusTone _connectionTone(ConnectionStatus status) {
-    switch (status) {
-      case ConnectionStatus.connected:
-        return StatusTone.success;
-      case ConnectionStatus.connecting:
-        return StatusTone.warning;
-      case ConnectionStatus.disconnected:
-        return StatusTone.danger;
+    return switch (status) {
+      ConnectionStatus.connected => StatusTone.success,
+      ConnectionStatus.connecting => StatusTone.warning,
+      ConnectionStatus.deviceFound => StatusTone.info,
+      ConnectionStatus.deviceNotWorn => StatusTone.warning,
+      ConnectionStatus.disconnected => StatusTone.danger,
+    };
+  }
+}
+
+class _ConnectionBanner extends StatelessWidget {
+  const _ConnectionBanner({required this.connection, this.error});
+
+  final ConnectionStatus connection;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    if (connection == ConnectionStatus.connected) {
+      return const SizedBox.shrink();
     }
+
+    final dark = AppColors.isDark(context);
+    final (Color bg, Color fg, String text) = switch (connection) {
+      ConnectionStatus.connecting => (
+          AppColors.muted(context),
+          AppColors.secondary(context),
+          'Python Cortex’e bağlanıyor… Emotiv Launcher ve cihaz hazır olmalı.',
+        ),
+      ConnectionStatus.deviceFound => (
+          AppColors.softPrimary(context),
+          AppColors.primary,
+          'Cihaz bulundu. Oturum ve EEG stream hazırlanıyor…',
+        ),
+      ConnectionStatus.deviceNotWorn => (
+          dark ? const Color(0xFF332A14) : const Color(0xFFFBF0D4),
+          AppColors.warning,
+          error ?? 'Cihaz takılı değil. Headset’i başına yerleştirin.',
+        ),
+      _ => (
+          dark ? const Color(0xFF332A14) : const Color(0xFFFBF0D4),
+          AppColors.warning,
+          error ?? 'API açık ama headset bağlı değil. Emotiv cihazını aç.',
+        ),
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 13, color: fg, height: 1.35),
+      ),
+    );
   }
 }
 
@@ -337,19 +259,19 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.line(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
+              color: AppColors.hint(context),
               letterSpacing: 0.4,
             ),
           ),
