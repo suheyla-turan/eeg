@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +37,9 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // Storage kuralları genelde auth ister; Auth kullanmıyoruz ama
+    // anonim oturum Storage yazma için token sağlar.
+    await _ensureAnonymousAuth();
     firebaseReady = true;
     AppLogger.instance.firebase('Firebase başlatıldı');
   } catch (e, st) {
@@ -169,6 +173,29 @@ class _EegMobilAppState extends State<EegMobilApp> with WidgetsBindingObserver {
           );
         },
       ),
+    );
+  }
+}
+
+Future<void> _ensureAnonymousAuth() async {
+  final auth = FirebaseAuth.instance;
+  if (auth.currentUser != null) {
+    AppLogger.instance.firebase('Auth oturumu mevcut: ${auth.currentUser!.uid}');
+    return;
+  }
+  try {
+    final cred = await auth.signInAnonymously();
+    AppLogger.instance.firebase(
+      'Anonim Auth oturumu açıldı: ${cred.user?.uid}',
+    );
+  } catch (e, st) {
+    // Auth olmadan Firestore çalışır; Storage kuralları auth isterse
+    // yükleme 403 verir. Console'da Anonymous Sign-in açılmalı.
+    AppLogger.instance.error(
+      'Anonim Auth başarısız — Firebase Console > Authentication > '
+      'Sign-in method > Anonymous etkin olmalı',
+      error: e,
+      stackTrace: st,
     );
   }
 }

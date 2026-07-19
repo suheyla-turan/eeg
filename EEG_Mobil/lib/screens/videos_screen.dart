@@ -138,6 +138,76 @@ class _VideosScreenState extends State<VideosScreen> {
     }
   }
 
+  Future<void> _confirmDeleteAll() async {
+    final provider = context.read<VideoContentProvider>();
+    if (provider.saving) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Tüm videoları sil'),
+        content: const Text(
+          'Firestore kayıtları ve Firebase Storage dosyaları '
+          'kalıcı olarak silinecek. Emin misin?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('İptal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text('Tümünü sil'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Videolar siliniyor…'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final count = await provider.deleteAll();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    final messenger = ScaffoldMessenger.of(context);
+    if (count != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            count == 0
+                ? 'Storage temizlendi (Firestore zaten boştu)'
+                : '$count video silindi',
+          ),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Silinemedi'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
   Future<void> _pickAndUploadVideos() async {
     final provider = context.read<VideoContentProvider>();
     if (provider.saving) return;
@@ -181,17 +251,22 @@ class _VideosScreenState extends State<VideosScreen> {
       },
     );
 
-    final result = await provider.createManyFromFiles(
-      files,
-      onProgress: (current, total) {
-        progress.value = (current: current, total: total);
-      },
-    );
+    ({int uploaded, int failed}) result = (uploaded: 0, failed: files.length);
+    try {
+      result = await provider.createManyFromFiles(
+        files,
+        onProgress: (current, total) {
+          progress.value = (current: current, total: total);
+        },
+      );
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      progress.dispose();
+    }
 
     if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pop();
-    progress.dispose();
-
     final messenger = ScaffoldMessenger.of(context);
     if (result.uploaded > 0 && result.failed == 0) {
       messenger.showSnackBar(
@@ -211,6 +286,7 @@ class _VideosScreenState extends State<VideosScreen> {
         SnackBar(
           content: Text(provider.errorMessage ?? 'Videolar yüklenemedi'),
           backgroundColor: AppColors.danger,
+          duration: const Duration(seconds: 8),
         ),
       );
     }
@@ -227,6 +303,13 @@ class _VideosScreenState extends State<VideosScreen> {
               title: const Text('Videolar'),
               actions: [
                 IconButton(
+                  tooltip: 'Tümünü sil',
+                  onPressed: provider.loading || provider.saving
+                      ? null
+                      : _confirmDeleteAll,
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                ),
+                IconButton(
                   onPressed: provider.loading ? null : provider.loadAll,
                   icon: const Icon(Icons.refresh),
                 ),
@@ -239,38 +322,67 @@ class _VideosScreenState extends State<VideosScreen> {
         icon: const Icon(Icons.upload_file),
         label: const Text('Video Yükle'),
       ),
-      body: provider.loading
-          ? const LoadingView(message: 'Videolar yükleniyor…')
-          : provider.errorMessage != null && provider.videos.isEmpty
-              ? EmptyStateView(
-                  title: 'Videolar yüklenemedi',
-                  subtitle: provider.errorMessage,
-                  icon: Icons.error_outline,
-                  actionLabel: 'Tekrar Dene',
-                  onAction: () =>
-                      context.read<VideoContentProvider>().loadAll(),
-                )
-              : provider.videos.isEmpty
-                  ? const EmptyStateView(
-                      title: 'Henüz video yok',
-                      subtitle:
-                          'İstediğin kadar videoyu tek seferde seçip yükleyebilirsin.',
-                      icon: Icons.videocam_outlined,
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                      itemCount: provider.videos.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final v = provider.videos[index];
-                        return _VideoListTile(
-                          video: v,
-                          onPlay: () => _openPlayer(v),
-                          onRename: () => _rename(v),
-                          onDelete: () => _confirmDelete(v),
-                        );
-                      },
-                    ),
+      body: Column(
+        children: [
+          if (widget.embeddedInShell)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    tooltip: 'Tümünü sil',
+                    onPressed: provider.loading || provider.saving
+                        ? null
+                        : _confirmDeleteAll,
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'Yenile',
+                    onPressed: provider.loading ? null : provider.loadAll,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: provider.loading
+                ? const LoadingView(message: 'Videolar yükleniyor…')
+                : provider.errorMessage != null && provider.videos.isEmpty
+                    ? EmptyStateView(
+                        title: 'Videolar yüklenemedi',
+                        subtitle: provider.errorMessage,
+                        icon: Icons.error_outline,
+                        actionLabel: 'Tekrar Dene',
+                        onAction: () =>
+                            context.read<VideoContentProvider>().loadAll(),
+                      )
+                    : provider.videos.isEmpty
+                        ? const EmptyStateView(
+                            title: 'Henüz video yok',
+                            subtitle:
+                                'İstediğin kadar videoyu tek seferde seçip yükleyebilirsin.',
+                            icon: Icons.videocam_outlined,
+                          )
+                        : ListView.separated(
+                            padding:
+                                const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                            itemCount: provider.videos.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final v = provider.videos[index];
+                              return _VideoListTile(
+                                video: v,
+                                onPlay: () => _openPlayer(v),
+                                onRename: () => _rename(v),
+                                onDelete: () => _confirmDelete(v),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
     );
   }
 }

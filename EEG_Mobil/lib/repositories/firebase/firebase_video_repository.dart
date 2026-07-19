@@ -67,7 +67,62 @@ class FirebaseVideoRepository implements VideoRepository {
 
   @override
   Future<void> delete(String videoId) async {
+    await _deleteStorageForVideo(videoId);
     await _col.doc(videoId).delete();
+  }
+
+  /// Yalnızca Firestore kaydını siler (başarısız yükleme geri alma).
+  Future<void> deleteMetadata(String videoId) async {
+    await _col.doc(videoId).delete();
+  }
+
+  @override
+  Future<int> deleteAll() async {
+    final snap = await _col.get();
+    for (final doc in snap.docs) {
+      await doc.reference.delete();
+    }
+    await _deleteAllStorageVideos();
+    return snap.docs.length;
+  }
+
+  Future<void> _deleteStorageForVideo(String videoId) async {
+    for (final folder in ['videos', 'videos/thumbnails']) {
+      try {
+        final listed = await _storage.ref(folder).listAll();
+        for (final item in listed.items) {
+          if (!item.name.startsWith('$videoId.')) continue;
+          try {
+            await item.delete();
+          } catch (_) {
+            // Dosya yoksa veya zaten silinmişse yoksay.
+          }
+        }
+      } catch (_) {
+        // Storage listesi başarısız olsa bile Firestore silinsin.
+      }
+    }
+  }
+
+  Future<void> _deleteAllStorageVideos() async {
+    try {
+      final root = await _storage.ref('videos').listAll();
+      for (final item in root.items) {
+        try {
+          await item.delete();
+        } catch (_) {}
+      }
+      for (final prefix in root.prefixes) {
+        final nested = await prefix.listAll();
+        for (final item in nested.items) {
+          try {
+            await item.delete();
+          } catch (_) {}
+        }
+      }
+    } catch (_) {
+      // Storage temizliği başarısız olsa bile Firestore silinmiş olur.
+    }
   }
 
   @override

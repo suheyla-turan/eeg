@@ -1,4 +1,7 @@
 rules_version = '2';
+// Araştırma uygulaması — Auth yok / anonim Auth.
+// Yayınlamak için: firebase deploy --only storage
+// veya Console > Storage > Rules
 service firebase.storage {
   match /b/{bucket}/o {
     match /videos/{allPaths=**} {

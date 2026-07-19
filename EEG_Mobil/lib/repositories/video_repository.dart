@@ -15,6 +15,10 @@ abstract class VideoRepository {
 
   Future<void> delete(String videoId);
 
+  /// Firestore `videos` koleksiyonunu ve Storage `videos/` klasörünü tamamen siler.
+  /// Silinen Firestore belge sayısını döner.
+  Future<int> deleteAll();
+
   /// Video dosyasını Firebase Storage'a yükler; indirme URL'si döner.
   Future<String> uploadVideoFile({
     required String videoId,
