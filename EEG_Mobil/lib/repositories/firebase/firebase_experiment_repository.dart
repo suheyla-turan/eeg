@@ -117,4 +117,41 @@ class FirebaseExperimentRepository implements ExperimentRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<void> delete(String experimentId) async {
+    try {
+      await _col.doc(experimentId).delete();
+      AppLogger.instance.firebase('Experiment silindi: $experimentId');
+    } catch (e, st) {
+      AppLogger.instance.error(
+        'Experiment delete hatası',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    try {
+      final snap = await _col.get();
+      final batch = _db.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      AppLogger.instance.firebase(
+        'Tüm deneyler silindi: ${snap.docs.length}',
+      );
+    } catch (e, st) {
+      AppLogger.instance.error(
+        'Experiment deleteAll hatası',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
 }

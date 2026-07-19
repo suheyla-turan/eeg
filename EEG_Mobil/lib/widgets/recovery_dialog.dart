@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_messenger.dart';
+import '../core/app_page_route.dart';
 import '../models/experiment_status.dart';
 import '../providers/experiment_provider.dart';
 import '../providers/recovery_provider.dart';
@@ -130,7 +131,10 @@ Future<void> showRecoveryDialogIfNeeded(BuildContext context) async {
     }
 
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => page),
+      AppPageRoute<void>(
+        transition: AppTransition.sharedAxisX,
+        builder: (_) => page,
+      ),
     );
   }
 }

@@ -33,16 +33,15 @@ class ExperimentResultsStepScreen extends StatelessWidget {
             cancelled ? 'Deney İptal Edildi' : 'Deney Tamamlandı',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: AppColors.text,
                 ),
           ),
           const SizedBox(height: 6),
           Text(
             participant == null
-                ? 'Özet skorlar aşağıdadır.'
-                : '${participant.firstName} ${participant.lastName}',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+                ? 'Özet skorlar aşağıdadır. Sonuçlar geçmişe kaydedildi.'
+                : '${participant.firstName} ${participant.lastName} · Sonuçlar geçmişe kaydedildi.',
+            style: TextStyle(
+              color: AppColors.secondary(context),
               height: 1.4,
             ),
           ),

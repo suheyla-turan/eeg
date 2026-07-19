@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_messenger.dart';
+import '../core/app_page_route.dart';
 import '../models/participant.dart';
 import '../providers/eeg_provider.dart';
 import '../providers/experiment_provider.dart';
@@ -247,7 +248,10 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
     }
 
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => sessionPage),
+      AppPageRoute<void>(
+        transition: AppTransition.sharedAxisX,
+        builder: (_) => sessionPage,
+      ),
     );
   }
 
@@ -291,6 +295,7 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
   Widget _experimentTypeCard(ExperimentProvider exp) {
     return SectionCard(
       title: 'Deney Tipi',
+      icon: Icons.science_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -431,6 +436,7 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
           else ...[
             SectionCard(
               title: 'Kişisel Bilgiler',
+              icon: Icons.badge_outlined,
               child: Column(
                 children: [
                   _field(_firstName, 'Ad', required: true),
@@ -443,16 +449,16 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
                       builder: (state) {
                         return InkWell(
                           onTap: _pickBirthDate,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           child: InputDecorator(
                             decoration: _decoration(
                               'Doğum tarihi',
                               hint: 'Kaydırarak seçin',
                             ).copyWith(
                               errorText: state.errorText,
-                              suffixIcon: const Icon(
+                              suffixIcon: Icon(
                                 Icons.calendar_month_outlined,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             child: Text(
@@ -489,15 +495,11 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
               ),
             ),
             SectionCard(
-              title: 'Alışkanlıklar',
+              title: 'EEG Bilgileri',
+              subtitle: 'Ölçümü etkileyebilecek özellikler',
+              icon: Icons.monitor_heart_outlined,
               child: Column(
                 children: [
-                  _nullableDropdown(
-                    label: 'Günlük Sosyal Medya Kullanımı',
-                    value: _socialMedia,
-                    items: _socialMediaOptions,
-                    onChanged: (v) => setState(() => _socialMedia = v),
-                  ),
                   _dropdown(
                     label: 'Baskın El',
                     value: _dominantHand,
@@ -514,8 +516,22 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
                       ),
                     ),
                     value: _visionProblem,
-                    activeColor: AppColors.primary,
+                    activeColor: Theme.of(context).colorScheme.primary,
                     onChanged: (v) => setState(() => _visionProblem = v),
+                  ),
+                ],
+              ),
+            ),
+            SectionCard(
+              title: 'Alışkanlıklar',
+              icon: Icons.schedule_outlined,
+              child: Column(
+                children: [
+                  _nullableDropdown(
+                    label: 'Günlük Sosyal Medya Kullanımı',
+                    value: _socialMedia,
+                    items: _socialMediaOptions,
+                    onChanged: (v) => setState(() => _socialMedia = v),
                   ),
                   _nullableDropdown(
                     label: 'Günlük Uyku Süresi',
@@ -523,20 +539,19 @@ class _NewParticipantScreenState extends State<NewParticipantScreen> {
                     items: _sleepOptions,
                     onChanged: (v) => setState(() => _sleep = v),
                   ),
-                  _field(_notes, 'Notlar', maxLines: 3),
                 ],
               ),
+            ),
+            SectionCard(
+              title: 'Ek Notlar',
+              icon: Icons.notes_outlined,
+              child: _field(_notes, 'Notlar', maxLines: 3),
             ),
           ],
           _experimentTypeCard(exp),
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: _submitting ? null : _submit,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
             icon: _submitting
                 ? const SizedBox(
                     width: 18,

@@ -31,15 +31,14 @@ class AnalysisStepScreen extends StatelessWidget {
                   'Veriler Analiz Ediliyor',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: AppColors.text,
                       ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'EEG verileri yükleniyor ve özet skorlar hesaplanıyor…',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: AppColors.secondary(context),
                     height: 1.4,
                   ),
                 ),

@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 
+/// Merkezi renk paleti — Teal / Blue Grey / Cyan.
 class AppColors {
-  static const bg = Color(0xFFF2F6F8);
+  static const bg = Color(0xFFF7F9FC);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFE8F0F3);
-  static const border = Color(0xFFD5E2E8);
-  static const text = Color(0xFF0F1C24);
-  static const textSecondary = Color(0xFF5A6F7A);
-  static const textMuted = Color(0xFF8A9BA5);
-  static const primary = Color(0xFF0D7A8C);
-  static const primarySoft = Color(0xFFD6EEF2);
-  static const accent = Color(0xFF1FA8A0);
+  static const surfaceMuted = Color(0xFFEEF2F6);
+  static const border = Color(0xFFD8E0E8);
+  static const text = Color(0xFF1A2332);
+  static const textSecondary = Color(0xFF5A6B7D);
+  static const textMuted = Color(0xFF8A97A8);
+  static const primary = Color(0xFF00897B);
+  static const primarySoft = Color(0xFFD6F0EC);
+  static const secondaryTone = Color(0xFF607D8B);
+  static const accent = Color(0xFF00BCD4);
   static const success = Color(0xFF2E9B63);
-  static const warning = Color(0xFFD4A017);
-  static const danger = Color(0xFFC44B4B);
+  static const warning = Color(0xFFF57C00);
+  static const danger = Color(0xFFE53935);
   static const mapBg = Color(0xFF0B2A33);
   static const mapRing = Color(0xFF1A4A56);
   static const qualityGood = Color(0xFF2E9B63);
-  static const qualityFair = Color(0xFFD4A017);
-  static const qualityPoor = Color(0xFFC44B4B);
-  static const tabInactive = Color(0xFF8A9BA5);
+  static const qualityFair = Color(0xFFF57C00);
+  static const qualityPoor = Color(0xFFE53935);
+  static const tabInactive = Color(0xFF8A97A8);
 
   // Koyu tema
   static const darkBg = Color(0xFF10181C);

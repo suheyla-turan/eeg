@@ -67,15 +67,14 @@ class _ReelsCompletedStepScreenState extends State<ReelsCompletedStepScreen> {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.text,
                   ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Bir sonraki aşamaya geçmek için bekleyin veya Devam Et’e basın.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: AppColors.secondary(context),
                 height: 1.45,
               ),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_page_route.dart';
 import '../models/text_content.dart';
 import '../providers/text_content_provider.dart';
 import '../theme/app_colors.dart';
@@ -31,7 +32,8 @@ class _TextsScreenState extends State<TextsScreen> {
 
   Future<void> _openForm({TextContent? existing}) async {
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
+      AppPageRoute<bool>(
+        transition: AppTransition.sharedAxisY,
         builder: (_) => TextFormScreen(existing: existing),
       ),
     );

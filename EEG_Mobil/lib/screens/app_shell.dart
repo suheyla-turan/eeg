@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_page_route.dart';
 import '../models/participant.dart';
 import '../theme/app_colors.dart';
+import '../widgets/participant_select_sheet.dart';
 import 'history_screen.dart';
 import 'home_eeg_shell.dart';
 import 'new_participant_screen.dart';
 import 'participant_registration_screen.dart';
 import 'participants_screen.dart';
 import 'settings_screen.dart';
+import 'statistics_screen.dart';
 import 'texts_screen.dart';
 import 'videos_screen.dart';
 import 'welcome_screen.dart';
@@ -21,6 +24,7 @@ enum AppDestination {
   texts,
   eeg,
   history,
+  statistics,
   settings,
 }
 
@@ -48,6 +52,7 @@ class AppShellState extends State<AppShell> {
     AppDestination.texts: 'Metinler',
     AppDestination.eeg: 'EEG Bağlantısı',
     AppDestination.history: 'Geçmiş Deneyler',
+    AppDestination.statistics: 'İstatistikler',
     AppDestination.settings: 'Ayarlar',
   };
 
@@ -74,13 +79,29 @@ class AppShellState extends State<AppShell> {
     );
   }
 
+  Future<void> openParticipantSelect() async {
+    await showParticipantSelectSheet(
+      context,
+      onSelectExisting: (participant) {
+        goTo(
+          AppDestination.startExperiment,
+          experimentParticipant: participant,
+        );
+      },
+      onAddNew: () => goTo(AppDestination.registerParticipant),
+    );
+  }
+
   Widget _body() {
     switch (_destination) {
       case AppDestination.home:
         return WelcomeScreen(
-          onStartExperiment: () => goTo(AppDestination.startExperiment),
-          onRegisterParticipant: () =>
-              goTo(AppDestination.registerParticipant),
+          key: const ValueKey('home'),
+          onStartExperiment: openParticipantSelect,
+          onParticipants: () => goTo(AppDestination.participants),
+          onHistory: () => goTo(AppDestination.history),
+          onStatistics: () => goTo(AppDestination.statistics),
+          onSettings: () => goTo(AppDestination.settings),
           onOpenEeg: () => goTo(AppDestination.eeg),
         );
       case AppDestination.startExperiment:
@@ -91,21 +112,45 @@ class AppShellState extends State<AppShell> {
         );
       case AppDestination.registerParticipant:
         return ParticipantRegistrationScreen(
+          key: const ValueKey('register'),
           embeddedInShell: true,
           onRegistered: openExperimentAfterRegistration,
         );
       case AppDestination.participants:
-        return const ParticipantsScreen(embeddedInShell: true);
+        return const ParticipantsScreen(
+          key: ValueKey('participants'),
+          embeddedInShell: true,
+        );
       case AppDestination.videos:
-        return const VideosScreen(embeddedInShell: true);
+        return const VideosScreen(
+          key: ValueKey('videos'),
+          embeddedInShell: true,
+        );
       case AppDestination.texts:
-        return const TextsScreen(embeddedInShell: true);
+        return const TextsScreen(
+          key: ValueKey('texts'),
+          embeddedInShell: true,
+        );
       case AppDestination.eeg:
-        return const HomeEegShell(embeddedInShell: true);
+        return const HomeEegShell(
+          key: ValueKey('eeg'),
+          embeddedInShell: true,
+        );
       case AppDestination.history:
-        return const HistoryScreen(embeddedInShell: true);
+        return const HistoryScreen(
+          key: ValueKey('history'),
+          embeddedInShell: true,
+        );
+      case AppDestination.statistics:
+        return const StatisticsScreen(
+          key: ValueKey('stats'),
+          embeddedInShell: true,
+        );
       case AppDestination.settings:
-        return const SettingsScreen(embeddedInShell: true);
+        return const SettingsScreen(
+          key: ValueKey('settings'),
+          embeddedInShell: true,
+        );
     }
   }
 
@@ -119,10 +164,19 @@ class AppShellState extends State<AppShell> {
         current: _destination,
         onSelect: (dest) {
           Navigator.of(context).pop();
+          if (dest == AppDestination.startExperiment) {
+            openParticipantSelect();
+            return;
+          }
           goTo(dest);
         },
       ),
-      body: _body(),
+      body: FadeThroughSwitcher(
+        child: KeyedSubtree(
+          key: ValueKey(_destination),
+          child: _body(),
+        ),
+      ),
     );
   }
 }
@@ -154,7 +208,8 @@ class _AppDrawer extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.psychology_outlined, size: 36, color: scheme.primary),
+                  Icon(Icons.psychology_outlined,
+                      size: 36, color: scheme.primary),
                   const Spacer(),
                   Text(
                     'EEG Araştırma',
@@ -216,6 +271,12 @@ class _AppDrawer extends StatelessWidget {
               dest: AppDestination.history,
               icon: Icons.history_outlined,
               label: 'Geçmiş Deneyler',
+            ),
+            _item(
+              context,
+              dest: AppDestination.statistics,
+              icon: Icons.insights_outlined,
+              label: 'İstatistikler',
             ),
             const _DrawerSection('Sistem'),
             _item(

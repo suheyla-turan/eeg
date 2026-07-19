@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_page_route.dart';
+import '../core/app_messenger.dart';
 import '../providers/history_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/empty_state_view.dart';
 import 'participant_history_screen.dart';
 
@@ -55,6 +59,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
     await history.load();
   }
 
+  Future<void> _deleteOne(String experimentId) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Deneyi sil',
+      message:
+          'Bu deneyi silmek istediğinize emin misiniz?\nBu işlem geri alınamaz.',
+      cancelLabel: 'Vazgeç',
+      confirmLabel: 'Sil',
+    );
+    if (!confirmed || !mounted) return;
+
+    final ok = await context.read<HistoryProvider>().deleteExperiment(experimentId);
+    if (!mounted) return;
+    if (ok) {
+      AppMessenger.success('Deney silindi');
+    } else {
+      AppMessenger.error('Silme başarısız');
+    }
+  }
+
+  Future<void> _deleteAll() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Tüm geçmişi sil',
+      message:
+          'Tüm deney geçmişini silmek istediğinize emin misiniz?\nBu işlem geri alınamaz.',
+      cancelLabel: 'Vazgeç',
+      confirmLabel: 'Sil',
+    );
+    if (!confirmed || !mounted) return;
+
+    final ok = await context.read<HistoryProvider>().deleteAllHistory();
+    if (!mounted) return;
+    if (ok) {
+      AppMessenger.success('Tüm geçmiş silindi');
+    } else {
+      AppMessenger.error('Silme başarısız');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final history = context.watch<HistoryProvider>();
@@ -90,16 +134,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     decoration: InputDecoration(
                       hintText: 'Katılımcı adı…',
                       prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: AppColors.card(context),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.line(context)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.line(context)),
-                      ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
@@ -135,8 +169,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       const Spacer(),
                       IconButton(
+                        tooltip: 'Yenile',
                         onPressed: history.loading ? null : history.load,
                         icon: const Icon(Icons.refresh),
+                      ),
+                      PopupMenuButton<String>(
+                        tooltip: 'Diğer',
+                        onSelected: (v) {
+                          if (v == 'delete_all') _deleteAll();
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'delete_all',
+                            child: Text('Tüm Geçmişi Sil'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -174,19 +221,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                         itemCount: history.items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.md),
                         itemBuilder: (context, index) {
                           final item = history.items[index];
                           final exp = item.experiment;
                           final p = item.participant;
                           return Material(
                             color: AppColors.card(context),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.cardRadius),
+                            elevation: 0,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius:
+                                  BorderRadius.circular(AppSpacing.cardRadius),
                               onTap: () {
                                 Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
+                                  AppPageRoute<void>(
+                                    transition: AppTransition.sharedAxisX,
                                     builder: (_) => ParticipantHistoryScreen(
                                       participant: p,
                                     ),
@@ -196,10 +248,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.cardRadius,
+                                  ),
                                   border: Border.all(
                                     color: AppColors.line(context),
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.04),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
                                 ),
                                 child: Row(
                                   children: [
@@ -208,12 +270,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       height: 44,
                                       decoration: BoxDecoration(
                                         color: AppColors.softPrimary(context),
-                                        borderRadius:
-                                            BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.person_outline,
-                                        color: AppColors.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -256,6 +319,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               ? AppColors.success
                                               : AppColors.warning,
                                       size: 22,
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Sil',
+                                      onPressed: () =>
+                                          _deleteOne(exp.experimentId),
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: AppColors.danger,
+                                      ),
                                     ),
                                   ],
                                 ),

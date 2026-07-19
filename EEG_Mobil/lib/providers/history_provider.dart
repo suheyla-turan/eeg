@@ -106,4 +106,38 @@ class HistoryProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> deleteExperiment(String experimentId) async {
+    try {
+      await _experiments.delete(experimentId);
+      items = items
+          .where((e) => e.experiment.experimentId != experimentId)
+          .toList();
+      participantExperiments = participantExperiments
+          .where((e) => e.experimentId != experimentId)
+          .toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      if (kDebugMode) debugPrint('History delete: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteAllHistory() async {
+    try {
+      await _experiments.deleteAll();
+      items = [];
+      participantExperiments = [];
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      if (kDebugMode) debugPrint('History deleteAll: $e');
+      return false;
+    }
+  }
 }

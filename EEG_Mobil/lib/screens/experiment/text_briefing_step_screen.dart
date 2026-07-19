@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../../providers/experiment_provider.dart';
 import '../../services/experiment_manager.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
 import '../../widgets/experiment_scaffold.dart';
+import '../../widgets/section_card.dart';
 
 class TextBriefingStepScreen extends StatefulWidget {
   const TextBriefingStepScreen({super.key});
@@ -50,33 +52,28 @@ class _TextBriefingStepScreenState extends State<TextBriefingStepScreen> {
     return ExperimentScaffold(
       title: 'Metin Bilgilendirme',
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Text(
+                child: SectionCard(
+                  title: 'Okuma aşaması',
+                  icon: Icons.menu_book_outlined,
+                  child: Text(
                     'Birazdan yaklaşık 10 dakika sürecek bir metin okuyacaksınız.\n\n'
                     'Lütfen metni dikkatlice okuyunuz.\n\n'
                     'Okuma boyunca EEG kaydı devam edecektir.',
-                    style: TextStyle(
-                      fontSize: 17,
-                      height: 1.55,
-                      color: AppColors.text,
-                    ),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          height: 1.55,
+                          color: AppColors.foreground(context),
+                        ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             BriefingActions(
               secondsLeft: _secondsLeft,
               onReady: _ready,

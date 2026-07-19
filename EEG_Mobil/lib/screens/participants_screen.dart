@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_page_route.dart';
 import '../providers/participant_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/empty_state_view.dart';
@@ -117,7 +118,8 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute<void>(
+                                AppPageRoute<void>(
+                                  transition: AppTransition.sharedAxisX,
                                   builder: (_) => ParticipantHistoryScreen(
                                     participant: p,
                                   ),

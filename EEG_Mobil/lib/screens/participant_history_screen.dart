@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_dependencies.dart';
+import '../core/app_page_route.dart';
 import '../models/experiment.dart';
 import '../models/experiment_status.dart';
 import '../models/participant.dart';
@@ -51,7 +52,8 @@ class _ParticipantHistoryScreenState extends State<ParticipantHistoryScreen> {
     }
 
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      AppPageRoute<void>(
+        transition: AppTransition.sharedAxisY,
         builder: (_) => ExperimentResultScreen(
           result: result,
           experiment: exp,

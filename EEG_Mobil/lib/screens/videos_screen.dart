@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_page_route.dart';
 import '../models/video_content.dart';
 import '../providers/video_content_provider.dart';
 import '../theme/app_colors.dart';
@@ -31,7 +32,8 @@ class _VideosScreenState extends State<VideosScreen> {
 
   Future<void> _openForm({VideoContent? existing}) async {
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
+      AppPageRoute<bool>(
+        transition: AppTransition.sharedAxisY,
         builder: (_) => VideoFormScreen(existing: existing),
       ),
     );

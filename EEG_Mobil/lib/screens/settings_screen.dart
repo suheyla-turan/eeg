@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_messenger.dart';
+import '../core/app_page_route.dart';
 import '../core/responsive.dart';
 import '../data/mock_eeg.dart';
 import '../providers/settings_provider.dart';
@@ -234,7 +235,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute<void>(
+                    AppPageRoute<void>(
+                      transition: AppTransition.fadeThrough,
                       builder: (_) => const LogsScreen(),
                     ),
                   );

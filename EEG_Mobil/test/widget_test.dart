@@ -25,7 +25,7 @@ void main() {
     // RecoveryProvider kısa beklemeleri bitene kadar
     await tester.pump(const Duration(seconds: 5));
     expect(find.textContaining('EEG Araştırma'), findsWidgets);
-    expect(find.textContaining('Proje amacı'), findsOneWidget);
+    expect(find.textContaining('Yeni Deney'), findsOneWidget);
     expect(find.byType(DrawerButton), findsOneWidget);
   });
 }

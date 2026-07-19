@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 
 /// Deney adımları için ortak Material 3 iskelet.
-/// Geri tuşu varsayılan olarak kapalıdır.
+/// Uygulama teması / AppBar dili ile uyumludur.
 class ExperimentScaffold extends StatelessWidget {
   const ExperimentScaffold({
     super.key,
@@ -26,15 +27,17 @@ class ExperimentScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: backgroundColor ?? AppColors.bg,
+        backgroundColor: backgroundColor ?? AppColors.pageBg(context),
         appBar: showAppBar
             ? AppBar(
                 title: title != null ? Text(title!) : null,
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.text,
+                backgroundColor: theme.appBarTheme.backgroundColor,
+                foregroundColor: theme.appBarTheme.foregroundColor,
                 elevation: 0,
                 surfaceTintColor: Colors.transparent,
                 automaticallyImplyLeading: false,
@@ -66,6 +69,7 @@ class BriefingActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final progress =
         totalSeconds <= 0 ? 1.0 : 1.0 - (secondsLeft / totalSeconds);
 
@@ -77,27 +81,22 @@ class BriefingActions extends StatelessWidget {
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: AppColors.primary,
+                color: scheme.primary,
               ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
             value: progress.clamp(0.0, 1.0),
             minHeight: 8,
-            backgroundColor: AppColors.surfaceMuted,
-            color: AppColors.primary,
+            backgroundColor: AppColors.muted(context),
+            color: scheme.primary,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.xl),
         FilledButton(
           onPressed: onReady,
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
           child: Text(readyLabel),
         ),
       ],

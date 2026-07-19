@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../../providers/experiment_provider.dart';
 import '../../services/experiment_manager.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
 import '../../widgets/experiment_scaffold.dart';
+import '../../widgets/section_card.dart';
 
 class ExperimentBriefingStepScreen extends StatefulWidget {
   const ExperimentBriefingStepScreen({super.key});
@@ -50,9 +52,9 @@ class _ExperimentBriefingStepScreenState
   @override
   Widget build(BuildContext context) {
     return ExperimentScaffold(
-      title: 'Deney Bilgilendirme',
+      title: 'Hazırlık',
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -60,20 +62,22 @@ class _ExperimentBriefingStepScreenState
               'Deney Hakkında',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.text,
                   ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Text(
+              'Kısa bir bilgilendirme. Hazır olduğunuzda devam edin.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.secondary(context),
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             Expanded(
               child: SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Text(
+                child: SectionCard(
+                  title: 'Protokol',
+                  icon: Icons.info_outline,
+                  child: Text(
                     'Bu deney sırasında EEG cihazınız takılı kalacaktır.\n\n'
                     'Sırasıyla:\n'
                     '• Kısa bir baseline ölçümü\n'
@@ -82,16 +86,14 @@ class _ExperimentBriefingStepScreenState
                     'Lütfen talimatları dikkatle izleyin ve doğal davranın.\n\n'
                     'Deney boyunca telefonunuzun ekranı açık kalacak ve '
                     'geri tuşu kullanılamayacaktır.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.55,
-                      color: AppColors.text,
-                    ),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          height: 1.55,
+                        ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             BriefingActions(
               secondsLeft: _secondsLeft,
               onReady: _continue,

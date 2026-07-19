@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -59,10 +60,16 @@ class _ExperimentFlowScreenState extends State<ExperimentFlowScreen> {
 
     return PopScope(
       canPop: false,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 280),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
+      child: PageTransitionSwitcher(
+        duration: const Duration(milliseconds: 320),
+        transitionBuilder: (child, animation, secondaryAnimation) {
+          return SharedAxisTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            transitionType: SharedAxisTransitionType.horizontal,
+            child: child,
+          );
+        },
         child: KeyedSubtree(
           key: ValueKey(step),
           child: _buildStep(step, provider),
@@ -113,7 +120,11 @@ class _CancelledStep extends StatelessWidget {
     final provider = context.watch<ExperimentProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.pageBg(context),
+      appBar: AppBar(
+        title: const Text('Deney İptal'),
+        automaticallyImplyLeading: false,
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(28),
@@ -132,29 +143,22 @@ class _CancelledStep extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.text,
                     ),
               ),
               const SizedBox(height: 12),
               Text(
-                'status = cancelled\n'
                 'O ana kadar alınan EEG verileri kaydedildi.\n'
                 'Örnek: ${provider.sampleCount}\n'
                 'Yol: ${provider.lastStoragePath ?? '-'}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: AppColors.secondary(context),
                   height: 1.5,
                 ),
               ),
               const Spacer(),
               FilledButton(
                 onPressed: onDone,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
                 child: const Text('Ana Sayfaya Dön'),
               ),
             ],

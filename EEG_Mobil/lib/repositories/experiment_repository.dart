@@ -18,4 +18,8 @@ abstract class ExperimentRepository {
 
   /// Yarım kalan / taslak / running deneyler (crash recovery).
   Future<List<Experiment>> getIncomplete();
+
+  Future<void> delete(String experimentId);
+
+  Future<void> deleteAll();
 }

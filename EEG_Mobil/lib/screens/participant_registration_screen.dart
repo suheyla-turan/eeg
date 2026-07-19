@@ -183,6 +183,7 @@ class _ParticipantRegistrationScreenState
                 SectionCard(
                   title: 'Katılımcı Kodu',
                   subtitle: 'Otomatik oluşturulur',
+                  icon: Icons.qr_code_2_outlined,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -207,6 +208,7 @@ class _ParticipantRegistrationScreenState
                 ),
                     SectionCard(
                       title: 'Kişisel Bilgiler',
+                      icon: Icons.badge_outlined,
                       child: Column(
                         children: [
                           _field(_firstName, 'Ad', required: true),
@@ -245,16 +247,11 @@ class _ParticipantRegistrationScreenState
                       ),
                     ),
                     SectionCard(
-                      title: 'Alışkanlıklar ve Notlar',
+                      title: 'EEG Bilgileri',
+                      subtitle: 'Ölçümü etkileyebilecek özellikler',
+                      icon: Icons.monitor_heart_outlined,
                       child: Column(
                         children: [
-                          _nullableDropdown(
-                            label: 'Günlük Sosyal Medya Kullanımı',
-                            value: _socialMedia,
-                            items: _socialMediaOptions,
-                            onChanged: (v) =>
-                                setState(() => _socialMedia = v),
-                          ),
                           _dropdown(
                             label: 'Baskın El',
                             value: _dominantHand,
@@ -272,9 +269,25 @@ class _ParticipantRegistrationScreenState
                               ),
                             ),
                             value: _visionProblem,
-                            activeColor: AppColors.primary,
+                            activeColor:
+                                Theme.of(context).colorScheme.primary,
                             onChanged: (v) =>
                                 setState(() => _visionProblem = v),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SectionCard(
+                      title: 'Alışkanlıklar',
+                      icon: Icons.schedule_outlined,
+                      child: Column(
+                        children: [
+                          _nullableDropdown(
+                            label: 'Günlük Sosyal Medya Kullanımı',
+                            value: _socialMedia,
+                            items: _socialMediaOptions,
+                            onChanged: (v) =>
+                                setState(() => _socialMedia = v),
                           ),
                           _nullableDropdown(
                             label: 'Uyku Süresi',
@@ -282,18 +295,17 @@ class _ParticipantRegistrationScreenState
                             items: _sleepOptions,
                             onChanged: (v) => setState(() => _sleep = v),
                           ),
-                          _field(_notes, 'Notlar', maxLines: 3),
                         ],
                       ),
+                    ),
+                    SectionCard(
+                      title: 'Ek Notlar',
+                      icon: Icons.notes_outlined,
+                      child: _field(_notes, 'Notlar', maxLines: 3),
                     ),
                     const SizedBox(height: 8),
                     FilledButton.icon(
                       onPressed: provider.saving ? null : _submit,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
                       icon: provider.saving
                           ? const SizedBox(
                               width: 18,
