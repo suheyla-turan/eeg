@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_page_route.dart';
@@ -22,6 +25,8 @@ class VideosScreen extends StatefulWidget {
 }
 
 class _VideosScreenState extends State<VideosScreen> {
+  final _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -30,7 +35,7 @@ class _VideosScreenState extends State<VideosScreen> {
     });
   }
 
-  Future<void> _openForm({VideoContent? existing}) async {
+  Future<void> _openEdit(VideoContent existing) async {
     final changed = await Navigator.of(context).push<bool>(
       AppPageRoute<bool>(
         transition: AppTransition.sharedAxisY,
@@ -39,6 +44,84 @@ class _VideosScreenState extends State<VideosScreen> {
     );
     if (changed == true && mounted) {
       await context.read<VideoContentProvider>().loadAll();
+    }
+  }
+
+  Future<void> _pickAndUploadVideos() async {
+    final provider = context.read<VideoContentProvider>();
+    if (provider.saving) return;
+
+    final picked = await _picker.pickMultiVideo();
+    if (picked.isEmpty || !mounted) return;
+
+    final files = picked.map((x) => File(x.path)).toList();
+    final progress = ValueNotifier<({int current, int total})>(
+      (current: 0, total: files.length),
+    );
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: ValueListenableBuilder<({int current, int total})>(
+              valueListenable: progress,
+              builder: (_, value, __) {
+                final current = value.current.clamp(0, value.total);
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      current == 0
+                          ? '${value.total} video hazırlanıyor…'
+                          : '$current / ${value.total} yükleniyor…',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    final result = await provider.createManyFromFiles(
+      files,
+      onProgress: (current, total) {
+        progress.value = (current: current, total: total);
+      },
+    );
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    progress.dispose();
+
+    final messenger = ScaffoldMessenger.of(context);
+    if (result.uploaded > 0 && result.failed == 0) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('${result.uploaded} video yüklendi')),
+      );
+    } else if (result.uploaded > 0) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '${result.uploaded} yüklendi, ${result.failed} başarısız',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Videolar yüklenemedi'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
     }
   }
 
@@ -92,11 +175,11 @@ class _VideosScreenState extends State<VideosScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
+        onPressed: provider.saving ? null : _pickAndUploadVideos,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Video Ekle'),
+        icon: const Icon(Icons.upload_file),
+        label: const Text('Video Yükle'),
       ),
       body: provider.loading
           ? const LoadingView(message: 'Videolar yükleniyor…')
@@ -113,7 +196,7 @@ class _VideosScreenState extends State<VideosScreen> {
                   ? const EmptyStateView(
                       title: 'Henüz video yok',
                       subtitle:
-                          'Yeni video eklemek için + butonunu kullanın.',
+                          'İstediğin kadar videoyu tek seferde seçip yükleyebilirsin.',
                       icon: Icons.videocam_outlined,
                     )
                   : ListView.separated(
@@ -130,7 +213,7 @@ class _VideosScreenState extends State<VideosScreen> {
                               borderRadius: BorderRadius.circular(14),
                               side: BorderSide(color: AppColors.line(context)),
                             ),
-                            onTap: () => _openForm(existing: v),
+                            onTap: () => _openEdit(v),
                             leading: CircleAvatar(
                               backgroundColor: AppColors.softPrimary(context),
                               backgroundImage: v.thumbnail != null &&
@@ -152,7 +235,7 @@ class _VideosScreenState extends State<VideosScreen> {
                             subtitle: Text(
                               [
                                 if (v.category.isNotEmpty) v.category,
-                                '${v.duration} sn',
+                                if (v.duration > 0) '${v.duration} sn',
                                 v.active ? 'Aktif' : 'Pasif',
                               ].join(' · '),
                               maxLines: 2,
@@ -161,7 +244,7 @@ class _VideosScreenState extends State<VideosScreen> {
                             trailing: PopupMenuButton<String>(
                               onSelected: (value) {
                                 if (value == 'edit') {
-                                  _openForm(existing: v);
+                                  _openEdit(v);
                                 } else if (value == 'delete') {
                                   _confirmDelete(v);
                                 }

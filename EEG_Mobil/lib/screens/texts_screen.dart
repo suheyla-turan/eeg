@@ -143,10 +143,9 @@ class _TextsScreenState extends State<TextsScreen> {
                               style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                             subtitle: Text(
-                              '${t.difficulty.isEmpty ? '—' : t.difficulty}'
-                              ' · ~${t.estimatedDuration} sn'
-                              ' · ${t.questions.length} soru'
-                              ' · ${t.active ? 'Aktif' : 'Pasif'}',
+                              t.questions.isEmpty
+                                  ? 'Soru yok'
+                                  : '${t.questions.length} soru',
                             ),
                             trailing: PopupMenuButton<String>(
                               onSelected: (value) {

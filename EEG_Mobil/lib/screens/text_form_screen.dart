@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/text_content.dart';
@@ -18,16 +17,11 @@ class TextFormScreen extends StatefulWidget {
 }
 
 class _TextFormScreenState extends State<TextFormScreen> {
-  static const _difficulties = ['Kolay', 'Orta', 'Zor'];
   static const _choiceLabels = ['A', 'B', 'C', 'D'];
 
   final _formKey = GlobalKey<FormState>();
   final _title = TextEditingController();
   final _content = TextEditingController();
-  final _duration = TextEditingController();
-
-  String _difficulty = 'Orta';
-  bool _active = true;
   final List<_QuestionDraft> _questions = [];
 
   bool get _isEdit => widget.existing != null;
@@ -39,9 +33,6 @@ class _TextFormScreenState extends State<TextFormScreen> {
     if (e != null) {
       _title.text = e.title;
       _content.text = e.content;
-      _duration.text = e.estimatedDuration.toString();
-      _difficulty = _difficulties.contains(e.difficulty) ? e.difficulty : 'Orta';
-      _active = e.active;
       for (final q in e.questions) {
         _questions.add(_QuestionDraft.fromQuestion(q));
       }
@@ -52,7 +43,6 @@ class _TextFormScreenState extends State<TextFormScreen> {
   void dispose() {
     _title.dispose();
     _content.dispose();
-    _duration.dispose();
     for (final q in _questions) {
       q.dispose();
     }
@@ -130,7 +120,6 @@ class _TextFormScreenState extends State<TextFormScreen> {
     }
 
     final provider = context.read<TextContentProvider>();
-    final estimated = int.tryParse(_duration.text.trim()) ?? 0;
     final questions = _buildQuestions();
 
     if (_isEdit) {
@@ -138,9 +127,6 @@ class _TextFormScreenState extends State<TextFormScreen> {
         widget.existing!.copyWith(
           title: _title.text.trim(),
           content: _content.text.trim(),
-          difficulty: _difficulty,
-          estimatedDuration: estimated,
-          active: _active,
           questions: questions,
         ),
       );
@@ -158,9 +144,9 @@ class _TextFormScreenState extends State<TextFormScreen> {
       final created = await provider.create(
         title: _title.text.trim(),
         content: _content.text.trim(),
-        difficulty: _difficulty,
-        estimatedDuration: estimated,
-        active: _active,
+        difficulty: '',
+        estimatedDuration: 0,
+        active: true,
         questions: questions,
       );
       if (!mounted) return;
@@ -195,44 +181,12 @@ class _TextFormScreenState extends State<TextFormScreen> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
               SectionCard(
-                title: 'Metin Bilgileri',
+                title: 'Metin',
                 icon: Icons.article_outlined,
                 child: Column(
                   children: [
                     _field(_title, 'Başlık', required: true),
                     _field(_content, 'İçerik', required: true, maxLines: 10),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: DropdownButtonFormField<String>(
-                        value: _difficulty,
-                        decoration: _decoration('Zorluk'),
-                        items: _difficulties
-                            .map(
-                              (d) => DropdownMenuItem(
-                                value: d,
-                                child: Text(d),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => _difficulty = v);
-                        },
-                      ),
-                    ),
-                    _field(
-                      _duration,
-                      'Tahmini süre (saniye)',
-                      required: true,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Aktif'),
-                      value: _active,
-                      activeColor: scheme.primary,
-                      onChanged: (v) => setState(() => _active = v),
-                    ),
                   ],
                 ),
               ),
@@ -303,16 +257,12 @@ class _TextFormScreenState extends State<TextFormScreen> {
     String label, {
     bool required = false,
     int maxLines = 1,
-    TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
         decoration: _decoration(label),
         validator: required
             ? (v) =>
