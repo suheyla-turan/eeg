@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import '../models/video_content.dart';
 import '../providers/eeg_provider.dart';
 import '../providers/experiment_provider.dart';
+import '../services/video_feed_scheduler.dart';
 import '../theme/app_colors.dart';
 import '../widgets/forward_only_scroll_physics.dart';
 import 'reading_experiment_screen.dart';
@@ -43,6 +44,7 @@ class _VideoReelsExperimentScreenState
   Timer? _uiTimer;
 
   List<VideoContent> _videos = [];
+  VideoFeedScheduler? _feed;
   int _currentIndex = 0;
   bool _loading = true;
   String? _loadError;
@@ -88,6 +90,9 @@ class _VideoReelsExperimentScreenState
         });
         return;
       }
+
+      // Tur 1: rastgele sıra. Sonraki turlar kullanıcı tüm videoları bitirince eklenir.
+      _feed = VideoFeedScheduler(_videos);
 
       if (!provider.isRunning && !widget.continueExistingSession) {
         if (!eeg.canStartExperiment) {
@@ -157,20 +162,24 @@ class _VideoReelsExperimentScreenState
   }
 
   Future<void> _openVideoAt(int index) async {
-    if (_videos.isEmpty) return;
+    final feed = _feed;
+    if (feed == null || _videos.isEmpty) return;
+
+    // Sonraki tur(lar) için kapasite: kullanıcı kaydırmadan önce hazır olsun.
+    feed.ensureCapacity(index + feed.sourceCount + 1);
 
     final previous = _controller;
     _controller = null;
     await previous?.dispose();
 
-    final video = _videos[index % _videos.length];
+    final video = feed.at(index);
     final controller = VideoPlayerController.networkUrl(
       Uri.parse(video.storageUrl),
     );
 
     try {
       await controller.initialize();
-      // Pause / seek yok — yalnızca autoplay + loop.
+      // Kullanıcı kaydırmadan otomatik geçiş yok — video kendi içinde döner.
       await controller.setLooping(true);
       await controller.setVolume(1);
       await controller.play();
@@ -197,8 +206,9 @@ class _VideoReelsExperimentScreenState
   }
 
   Future<void> _recordCurrentWatch({required DateTime transitionTime}) async {
-    if (_videos.isEmpty) return;
-    final video = _videos[_currentIndex % _videos.length];
+    final feed = _feed;
+    if (feed == null || feed.feed.isEmpty) return;
+    final video = feed.at(_currentIndex);
     final start = _videoStartedAt ?? transitionTime;
     final end = transitionTime;
     final watchedSec = end.difference(start).inSeconds;
@@ -320,9 +330,11 @@ class _VideoReelsExperimentScreenState
             scrollDirection: Axis.vertical,
             physics: const ForwardOnlyScrollPhysics(),
             onPageChanged: _onPageChanged,
-            // 10 dk boyunca ileri kaydırma için videolar döngüsel.
+            // 10 dk boyunca ileri kaydırma: tur tur rastgele feed.
             itemBuilder: (context, index) {
-              final video = _videos[index % _videos.length];
+              final feed = _feed!;
+              feed.ensureCapacity(index + 1);
+              final video = feed.at(index);
               final isActive = index == _currentIndex;
               return _ReelPage(
                 video: video,
@@ -382,7 +394,7 @@ class _VideoReelsExperimentScreenState
               children: [
                 const Icon(Icons.keyboard_arrow_up, color: Colors.white70),
                 Text(
-                  '${(_currentIndex % _videos.length) + 1}/${_videos.length}',
+                  '${(_currentIndex % (_feed?.sourceCount ?? 1)) + 1}/${_feed?.sourceCount ?? 0}',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],

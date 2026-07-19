@@ -8,7 +8,9 @@ import 'package:video_player/video_player.dart';
 import '../../models/video_content.dart';
 import '../../providers/experiment_provider.dart';
 import '../../services/experiment_manager.dart';
+import '../../services/video_feed_scheduler.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/forward_only_scroll_physics.dart';
 
 /// Instagram Reels mantığında 10 dakikalık video deneyi.
 class ReelsStepScreen extends StatefulWidget {
@@ -25,6 +27,7 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
   Timer? _uiTimer;
 
   List<VideoContent> _videos = [];
+  VideoFeedScheduler? _feed;
   int _currentIndex = 0;
   bool _loading = true;
   String? _loadError;
@@ -78,6 +81,9 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
         return;
       }
 
+      // Tur 1: rastgele sıra. Sonraki turlar kullanıcı tüm videoları bitirince eklenir.
+      _feed = VideoFeedScheduler(_videos);
+
       _sessionStartedAt = DateTime.now();
       _startExperimentCountdown();
       _startUiTicker();
@@ -120,20 +126,25 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
   }
 
   Future<void> _openVideoAt(int index) async {
-    if (_videos.isEmpty) return;
+    final feed = _feed;
+    if (feed == null || _videos.isEmpty) return;
+
+    // Sonraki tur(lar) için kapasite: kullanıcı kaydırmadan önce hazır olsun.
+    feed.ensureCapacity(index + feed.sourceCount + 1);
 
     _detachPositionListener();
     final previous = _controller;
     _controller = null;
     await previous?.dispose();
 
-    final video = _videos[index % _videos.length];
+    final video = feed.at(index);
     final controller = VideoPlayerController.networkUrl(
       Uri.parse(video.storageUrl),
     );
 
     try {
       await controller.initialize();
+      // Kullanıcı kaydırmadan otomatik geçiş yok — video kendi içinde döner.
       await controller.setLooping(true);
       await controller.setVolume(1);
       await controller.play();
@@ -144,6 +155,7 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
         if (!controller.value.isInitialized) return;
         final pos = controller.value.position;
         // Loop algılama: pozisyon ani olarak başa döner.
+        // Bu yalnızca istatistik içindir; sonraki videoya geçirmez.
         if (_lastPosition > const Duration(seconds: 1) &&
             pos < const Duration(milliseconds: 400)) {
           _replayCount++;
@@ -174,8 +186,9 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
   }
 
   Future<void> _recordCurrentWatch({required DateTime transitionTime}) async {
-    if (_videos.isEmpty) return;
-    final video = _videos[_currentIndex % _videos.length];
+    final feed = _feed;
+    if (feed == null || feed.feed.isEmpty) return;
+    final video = feed.at(_currentIndex);
     final start = _videoStartedAt ?? transitionTime;
     final end = transitionTime;
     final watchedSec = end.difference(start).inSeconds;
@@ -199,7 +212,13 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
   }
 
   Future<void> _onPageChanged(int index) async {
-    if (index == _currentIndex) return;
+    if (index <= _currentIndex) {
+      // Geriye dönüş yok; sıra ileri (rastgele feed) üzerinden ilerler.
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_currentIndex);
+      }
+      return;
+    }
     final now = DateTime.now();
     await _recordCurrentWatch(transitionTime: now);
     await _openVideoAt(index);
@@ -349,9 +368,12 @@ class _ReelsStepScreenState extends State<ReelsStepScreen> {
             PageView.builder(
               controller: _pageController,
               scrollDirection: Axis.vertical,
+              physics: const ForwardOnlyScrollPhysics(),
               onPageChanged: _onPageChanged,
               itemBuilder: (context, index) {
-                final video = _videos[index % _videos.length];
+                final feed = _feed!;
+                feed.ensureCapacity(index + 1);
+                final video = feed.at(index);
                 final isActive = index == _currentIndex;
                 return _ReelPage(
                   video: video,
