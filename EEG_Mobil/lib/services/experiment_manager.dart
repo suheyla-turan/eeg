@@ -9,8 +9,10 @@ import '../models/experiment_result.dart';
 import '../models/experiment_step.dart';
 import '../models/participant.dart';
 import '../models/text_content.dart';
+import '../models/text_quiz_response.dart';
 import '../models/video_content.dart';
 import '../models/video_watch_event.dart';
+import '../repositories/text_quiz_response_repository.dart';
 import '../repositories/text_repository.dart';
 import '../repositories/video_repository.dart';
 import '../repositories/video_watch_event_repository.dart';
@@ -26,15 +28,18 @@ class ExperimentManager extends ChangeNotifier {
     required VideoRepository videoRepository,
     required TextRepository textRepository,
     required VideoWatchEventRepository watchEventRepository,
+    required TextQuizResponseRepository textQuizResponseRepository,
   })  : _session = sessionService,
         _videos = videoRepository,
         _texts = textRepository,
-        _watchEvents = watchEventRepository;
+        _watchEvents = watchEventRepository,
+        _quizResponses = textQuizResponseRepository;
 
   final ExperimentSessionService _session;
   final VideoRepository _videos;
   final TextRepository _texts;
   final VideoWatchEventRepository _watchEvents;
+  final TextQuizResponseRepository _quizResponses;
 
   static const baselineDuration = Duration(seconds: 30);
   static const briefingCountdown = Duration(seconds: 15);
@@ -53,6 +58,7 @@ class ExperimentManager extends ChangeNotifier {
   List<VideoContent> videos = [];
   List<TextContent> texts = [];
   List<VideoWatchEvent> watchEvents = [];
+  TextQuizResponse? lastQuizResponse;
   String? selectedTextId;
 
   Timer? _eegTimer;
@@ -73,6 +79,7 @@ class ExperimentManager extends ChangeNotifier {
     this.selectedTextId = selectedTextId;
     errorMessage = null;
     watchEvents = [];
+    lastQuizResponse = null;
     sampleCount = 0;
     lastResult = null;
     lastStoragePath = null;
@@ -242,6 +249,34 @@ class ExperimentManager extends ChangeNotifier {
     return texts.first;
   }
 
+  /// Metin testi + duygu cevabını kaydeder (EEG analizinden bağımsız).
+  Future<void> saveQuizResponse({
+    required String textId,
+    required List<TextQuizAnswer> answers,
+    required String moodOption,
+    String? moodOtherText,
+  }) async {
+    final exp = experiment ?? _session.currentExperiment;
+    if (exp == null) return;
+
+    final response = TextQuizResponse(
+      responseId: '',
+      experimentId: exp.experimentId,
+      textId: textId,
+      answers: answers,
+      moodOption: moodOption,
+      moodOtherText: moodOtherText,
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      lastQuizResponse = await _quizResponses.create(response);
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Quiz response save: $e');
+    }
+  }
+
   /// Metin bitti → analiz → sonuç.
   Future<void> finishAndAnalyze() async {
     goTo(ExperimentStep.analyzing);
@@ -341,6 +376,7 @@ class ExperimentManager extends ChangeNotifier {
     lastStoragePath = null;
     sampleCount = 0;
     watchEvents = [];
+    lastQuizResponse = null;
     selectedTextId = null;
     _busy = false;
     notifyListeners();

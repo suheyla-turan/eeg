@@ -129,6 +129,7 @@ class _EegMobilAppState extends State<EegMobilApp> with WidgetsBindingObserver {
             videoRepository: deps.videoRepository,
             textRepository: deps.textRepository,
             watchEventRepository: deps.videoWatchEventRepository,
+            textQuizResponseRepository: deps.textQuizResponseRepository,
           ),
         ),
         ChangeNotifierProvider(

@@ -145,6 +145,7 @@ class _TextsScreenState extends State<TextsScreen> {
                             subtitle: Text(
                               '${t.difficulty.isEmpty ? '—' : t.difficulty}'
                               ' · ~${t.estimatedDuration} sn'
+                              ' · ${t.questions.length} soru'
                               ' · ${t.active ? 'Aktif' : 'Pasif'}',
                             ),
                             trailing: PopupMenuButton<String>(

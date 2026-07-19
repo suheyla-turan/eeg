@@ -4,11 +4,13 @@ import '../repositories/firebase/firebase_eeg_storage_repository.dart';
 import '../repositories/firebase/firebase_experiment_repository.dart';
 import '../repositories/firebase/firebase_participant_repository.dart';
 import '../repositories/firebase/firebase_result_repository.dart';
+import '../repositories/firebase/firebase_text_quiz_response_repository.dart';
 import '../repositories/firebase/firebase_text_repository.dart';
 import '../repositories/firebase/firebase_video_repository.dart';
 import '../repositories/firebase/firebase_video_watch_event_repository.dart';
 import '../repositories/participant_repository.dart';
 import '../repositories/result_repository.dart';
+import '../repositories/text_quiz_response_repository.dart';
 import '../repositories/text_repository.dart';
 import '../repositories/video_repository.dart';
 import '../repositories/video_watch_event_repository.dart';
@@ -25,6 +27,7 @@ class AppDependencies {
     required this.videoRepository,
     required this.textRepository,
     required this.videoWatchEventRepository,
+    required this.textQuizResponseRepository,
     required this.eegStorageRepository,
     required this.eegApiService,
     required this.eegService,
@@ -37,6 +40,7 @@ class AppDependencies {
   final VideoRepository videoRepository;
   final TextRepository textRepository;
   final VideoWatchEventRepository videoWatchEventRepository;
+  final TextQuizResponseRepository textQuizResponseRepository;
   final EegStorageRepository eegStorageRepository;
   final EegApiService eegApiService;
   final EegService eegService;
@@ -49,6 +53,7 @@ class AppDependencies {
     final videos = FirebaseVideoRepository();
     final texts = FirebaseTextRepository();
     final watchEvents = FirebaseVideoWatchEventRepository();
+    final quizResponses = FirebaseTextQuizResponseRepository();
     final storage = FirebaseEegStorageRepository();
     final api = EegApiService();
     final eeg = EegService(api: api);
@@ -68,6 +73,7 @@ class AppDependencies {
       videoRepository: videos,
       textRepository: texts,
       videoWatchEventRepository: watchEvents,
+      textQuizResponseRepository: quizResponses,
       eegStorageRepository: storage,
       eegApiService: api,
       eegService: eeg,

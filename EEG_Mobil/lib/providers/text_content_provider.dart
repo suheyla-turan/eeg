@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/text_content.dart';
+import '../models/text_quiz_question.dart';
 import '../repositories/text_repository.dart';
 
 class TextContentProvider extends ChangeNotifier {
@@ -35,6 +36,7 @@ class TextContentProvider extends ChangeNotifier {
     required String difficulty,
     required int estimatedDuration,
     required bool active,
+    List<TextQuizQuestion> questions = const [],
   }) async {
     saving = true;
     errorMessage = null;
@@ -49,6 +51,7 @@ class TextContentProvider extends ChangeNotifier {
           estimatedDuration: estimatedDuration,
           active: active,
           createdAt: DateTime.now(),
+          questions: questions,
         ),
       );
       await loadAll();

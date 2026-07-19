@@ -8,6 +8,7 @@ import '../models/participant.dart';
 import '../models/text_content.dart';
 import '../models/video_content.dart';
 import '../models/video_watch_event.dart';
+import '../repositories/text_quiz_response_repository.dart';
 import '../repositories/text_repository.dart';
 import '../repositories/video_repository.dart';
 import '../repositories/video_watch_event_repository.dart';
@@ -33,12 +34,14 @@ class ExperimentProvider extends ChangeNotifier {
     required VideoRepository videoRepository,
     required TextRepository textRepository,
     required VideoWatchEventRepository watchEventRepository,
+    required TextQuizResponseRepository textQuizResponseRepository,
   })  : _session = sessionService,
         manager = ExperimentManager(
           sessionService: sessionService,
           videoRepository: videoRepository,
           textRepository: textRepository,
           watchEventRepository: watchEventRepository,
+          textQuizResponseRepository: textQuizResponseRepository,
         ) {
     manager.addListener(_onManagerChanged);
   }
