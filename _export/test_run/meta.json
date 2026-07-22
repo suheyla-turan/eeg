@@ -1,0 +1,15 @@
+{
+  "startedAt": "2026-07-21T12:40:30.341409+00:00",
+  "updatedAt": "2026-07-21T12:40:30.341432+00:00",
+  "counts": {
+    "reels": 0,
+    "text": 0,
+    "other": 0
+  },
+  "paths": {
+    "reelsNdjson": "C:\\Users\\msi\\Desktop\\eeg\\_export\\test_run\\eeg_reels.ndjson",
+    "textNdjson": "C:\\Users\\msi\\Desktop\\eeg\\_export\\test_run\\eeg_text.ndjson",
+    "reelsJson": "C:\\Users\\msi\\Desktop\\eeg\\_export\\test_run\\eeg_reels.json",
+    "textJson": "C:\\Users\\msi\\Desktop\\eeg\\_export\\test_run\\eeg_text.json"
+  }
+}

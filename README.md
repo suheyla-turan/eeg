@@ -19,6 +19,8 @@ PC IP’si değişse bile aynı isimle çalışır.
 
 ## 1) Python API
 
+İlk kurulum:
+
 ```bash
 cd api
 python -m venv .venv
@@ -27,18 +29,44 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env
 # .env içine Emotiv CLIENT_ID / CLIENT_SECRET yaz
-python api_server.py
 ```
 
-Başarılı başlangıçta konsolda şuna benzer satır görünür:
+### Otomatik başlatma (önerilen)
 
+Elle `python api_server.py` çalıştırmana gerek kalmasın diye Windows oturumunda API’yi otomatik ayağa kaldır:
+
+```powershell
+cd api
+powershell -ExecutionPolicy Bypass -File .\install_autostart.ps1
 ```
-mDNS yayında: http://eegserver.local:8000  (192.168.x.x)
-```
+
+Bu komut:
+- Oturum açılışında API’yi başlatır
+- Her 2 dakikada bir kontrol eder; kapandıysa yeniden açar
+- USB telefon bağlıysa `adb reverse tcp:8000` tünelini yeniler
+- Zaten çalışıyorsa dokunmaz
+
+Manuel tek seferlik başlatma: `api\start_api.bat` (çift tık).
+
+Kaldırma: `.\install_autostart.ps1 -Uninstall`
+
+Başarılı başlangıçta `http://127.0.0.1:8000/health` yanıt verir; mDNS adı `eegserver.local`.
 
 Gizli bilgiler yalnızca `api/.env` içinde (Git’e gitmez). Repoda `api/.env.example` örneği vardır.
 
 ## 2) Flutter uygulama
+
+Tek komut (API + USB tüneli + flutter run):
+
+```powershell
+cd api
+powershell -ExecutionPolicy Bypass -File .\run_device.ps1
+```
+
+Veya Cursor/VS Code’da **EEG Mobil (API + adb reverse)** launch yapılandırması
+(önce `ensure_running` çalışır).
+
+Elle:
 
 ```bash
 cd EEG_Mobil
@@ -46,15 +74,20 @@ flutter pub get
 flutter run
 ```
 
-Emülatör yedeği (mDNS emülatörde bazen çalışmaz):
+Emülatör veya USB tüneli (gerekirse):
 
 ```bash
-adb reverse tcp:8000 tcp:8000
+cd api
+powershell -ExecutionPolicy Bypass -File .\link_phone.ps1
 ```
+
+Uygulama son başarılı API host’unu hatırlar. mDNS fiziksel telefonda
+(özellikle Xiaomi) sık başarısız olur; gerekirse Ayarlar’da
+**Host override** = PC Wi‑Fi IP (örn. `192.168.1.113`).
 
 ## Akış
 
-1. `python api_server.py` çalıştır (mDNS yayını otomatik başlar)
-2. Telefonu aynı Wi‑Fi’ye bağla
-3. Flutter’ı aç → `eegserver.local` keşfedilir
-4. Uygulamada **Başlat** → Cortex’e bağlanır, canlı veri akar
+1. Emotiv Launcher açık + headset bağlı olsun
+2. Bir kez `install_autostart.ps1` çalıştır (API + adb reverse otomatik)
+3. Telefonu USB veya aynı Wi‑Fi’ye bağla
+4. Flutter’da **Demo modu kapalı** → canlı EEG akar

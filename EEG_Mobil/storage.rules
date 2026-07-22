@@ -1,0 +1,11 @@
+rules_version = '2';
+// Video ve metin içerikleri uygulamada (assets + local_*.dart).
+// Storage yalnızca ham EEG dosyaları için kullanılır: eeg/{experimentId}/
+// Yayınlamak: firebase deploy --only storage
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /eeg/{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

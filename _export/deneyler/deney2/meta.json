@@ -1,0 +1,15 @@
+{
+  "deneyNo": 2,
+  "label": "Ikinci Deney",
+  "participantCode": "P-0003",
+  "participantName": "Yucel Yilmaz",
+  "experimentId": "2OaWigHnVBS6va0OCwkA",
+  "participantId": "OSsMRC0eiKu0N3afMJML",
+  "exportedAt": "2026-07-21T17:24:25.851342",
+  "sampleCountTotal": 2516,
+  "phases": {
+    "reels": 1269,
+    "text": 1247
+  },
+  "note": "Ham EEG kaydi; hesaplanmis skor yok. reels=video, text=metin."
+}

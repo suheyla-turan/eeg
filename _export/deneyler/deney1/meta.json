@@ -1,0 +1,15 @@
+{
+  "deneyNo": 1,
+  "label": "Birinci Deney",
+  "participantCode": "P-0001",
+  "participantName": "Suheyla Melike Turan",
+  "experimentId": "hWsVhdI9oQJZ6biX44HZ",
+  "participantId": "o1FLTILhd7QBhncxZWrM",
+  "exportedAt": "2026-07-20T17:40:06.967903",
+  "sampleCountTotal": 2257,
+  "phases": {
+    "reels": 1215,
+    "text": 1042
+  },
+  "note": "Ham EEG kaydi; hesaplanmis skor yok. reels=video, text=metin."
+}
