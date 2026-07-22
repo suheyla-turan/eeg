@@ -109,7 +109,10 @@ class ExperimentResultScreen extends StatelessWidget {
             ),
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child: ExperimentInterpretationSection(result: result),
+            child: ExperimentInterpretationSection(
+              result: result,
+              participant: participant,
+            ),
           ),
           _phaseSection('1. Reels', result.reels),
           _phaseSection('2. Metin', result.text),

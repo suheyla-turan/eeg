@@ -98,7 +98,10 @@ class ExperimentResultsStepScreen extends StatelessWidget {
             ],
             _overallChips(result),
             const SizedBox(height: 14),
-            ExperimentInterpretationSection(result: result),
+            ExperimentInterpretationSection(
+              result: result,
+              participant: participant,
+            ),
             const SizedBox(height: 14),
             _phaseCard('1. Reels', result.reels),
             const SizedBox(height: 14),

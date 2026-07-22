@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_dependencies.dart';
 import '../models/experiment_result.dart';
+import '../models/participant.dart';
 import '../services/result_interpreter.dart';
 import '../theme/app_colors.dart';
 
@@ -14,10 +15,12 @@ class ExperimentInterpretationSection extends StatefulWidget {
   const ExperimentInterpretationSection({
     super.key,
     required this.result,
+    this.participant,
     this.autoFetchGemini = true,
   });
 
   final ExperimentResult result;
+  final Participant? participant;
   final bool autoFetchGemini;
 
   @override
@@ -62,7 +65,10 @@ class _ExperimentInterpretationSectionState
 
     try {
       final gemini = context.read<AppDependencies>().geminiSessionService;
-      final updated = await gemini.ensureInterpretation(_result);
+      final updated = await gemini.ensureInterpretation(
+        _result,
+        participant: widget.participant,
+      );
       if (!mounted) return;
       setState(() {
         _result = updated;
@@ -201,8 +207,8 @@ class _ExperimentInterpretationSectionState
           ),
           const SizedBox(height: 4),
           Text(
-            'Reels ve metin aşamalarına dayalı AI yorumu ($modelLabel). '
-            'Klinik tanı içermez.',
+            'Reels (sosyal medya) ve metin okuma karşılaştırmasının sade AI yorumu '
+            '($modelLabel). Klinik tanı içermez.',
             style: TextStyle(
               fontSize: 12,
               height: 1.35,

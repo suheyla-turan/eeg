@@ -1,6 +1,7 @@
 import '../core/app_logger.dart';
 import '../models/experiment.dart';
 import '../models/experiment_result.dart';
+import '../models/participant.dart';
 import '../models/video_watch_event.dart';
 import '../repositories/eeg_storage_repository.dart';
 import '../repositories/experiment_repository.dart';
@@ -61,6 +62,7 @@ class ResultReanalyzer {
   Future<ExperimentResult?> ensureCurrentForExperiment(
     Experiment experiment, {
     bool withGemini = true,
+    Participant? participant,
   }) async {
     var existing = await _resolveResult(experiment);
 
@@ -78,7 +80,10 @@ class ResultReanalyzer {
 
     final gemini = _gemini;
     if (gemini == null) return existing;
-    return gemini.ensureInterpretation(existing);
+    return gemini.ensureInterpretation(
+      existing,
+      participant: participant,
+    );
   }
 
   /// Birden fazla deneyi v3'e yükseltir (geçmiş yüklenirken).

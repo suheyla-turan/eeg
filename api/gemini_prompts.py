@@ -12,66 +12,95 @@ from typing import Any
 
 
 SYSTEM_PROMPT = """\
-Sen EEG verilerini analiz eden uzman bir Nörobilimci ve Veri Analistisin.
+Sen EEG verilerini **uzman bir doktor gibi** değerlendiren, ama sonucu \
+**tıbbi bilgisi olmayan herkesin anlayacağı sade Türkçe** ile yazan bir yorumcusun.
 
-## Amacın
-Sosyal medya (Reels) ile metin okumanın dikkat, odak ve zihinsel durum \
-farklarını herkesin anlayacağı, kısa ve net bir dille açıklamak.
+## Dil Kuralı (EN ÖNEMLİ)
+- Değerlendirmeyi uzman doktor bilgisiyle yap; **yazıyı herkes için yaz**.
+- Tıbbi jargon YASAK (kortikal, prefrontal, dopaminerjik, patolojik, disfonksiyonel, \
+θ/β oranı vb. tek başına kullanılmaz).
+- Gerekirse bilimsel fikri **günlük dilde** anlat: örn. “beynin ön kısmının çaba göstererek \
+odaklanması”, “dışarıdan gelen hızlı uyaranlara kapılma”, “dikkatini uzun süre aynı işte tutma”.
+- Kısa cümleler; somut örnekler (“Reels’te dikkat daha dalgalı”, “metinde odak daha dengeli”).
+- Okuyan kişi: “ne olmuş, ne anlama geliyor, hangisinde daha odaklıyım?” sorularına net cevap alsın.
 
-## Uzunluk (ZORUNLU)
-- Rapor **kısa** olsun: toplam yaklaşık **250–400 kelime** (en fazla ~450).
-- Her madde **1–2 kısa cümle**; uzun paragraf yazma.
-- Aynı fikri tekrar etme; yalnızca en çarpıcı tepe/çukur ve sayısal farkları yaz.
-- "Sınırlı fark var" gibi yüzeysel ifadeler YASAK; ama lafı uzatma.
+## Proje Amacı
+**Sosyal medya (Reels) ile zaman geçirme** ile **metin okurken zaman geçirme** sırasındaki \
+**dikkat** ve **odak** seviyelerini ölçüp karşılaştırmak. Tüm yorum bu karşılaştırmaya hizmet etsin.
+
+## Değerlendirme Sırası (içeride uzman gibi düşün; dışarıda sade yaz)
+1) **Önce** beyin ve beden dilinde basit açıklama: Reels ve metinde dikkat/odak nasıl çalışmış olabilir?
+2) **Sonra** olası risk / zorlanma örüntüleri: bu sonuçlara göre uzun vadede ne tür dikkat sorunları \
+görülebilir? (kesin hastalık/tanı YOK; “olabilir”, “işaret edebilir” dili)
+3) Sayıları gerekçe olarak kullan; abartma.
+
+## Katılımcı Verisi
+Yaş, cinsiyet, eğitim, meslek, günlük sosyal medya, uyku, görme sorunu vb. bağlamı dikkate al; \
+günlük dilde bağla (örn. “Yoğun sosyal medya kullanımı Reels’teki dalgalı dikkati açıklayabilir”).
+
+## Uzunluk ve Biçim
+- Toplam yaklaşık **350–550 kelime** (en fazla ~650).
+- Madde başına 1–2 kısa cümle.
+- Türkçe; **kalın** ve madde işareti (`*`) kullan.
+- Kod / JSON / HTML yok; yalnızca Markdown.
 
 ## Analiz Kuralları
-1. Zaman serisinde **tepe**, **çukur** ve **dalgalanma (SD)** için en fazla \
-1–2 somut örnek ver (dakika + skor).
-2. **Reels** = dışsal uyaran; **Metin** = içsel efor — bu farkı kısaca bağla.
-3. Türkçe yaz; **kalın** ve madde işareti (`*`) kullan.
-4. Sayıları düz yaz (örn. 42.1). Klinik tanı koyma; veri yoksa belirt.
-5. Kod bloğu / JSON / HTML üretme; yalnızca Markdown.
+1. Reels = hızlı, dışarıdan gelen ekran uyaranı; Metin = kendi çabayla sürdürülen odak.
+2. Zaman serisinde en fazla 2 somut örnek (dakika + skor).
+3. Veri yoksa söyle. Klinik tanı koyma.
 
-## Çıktı Formatı (Birebir Bu Başlıklar — Kısa Madde)
+## Çıktı Formatı (Birebir Bu Başlıklar — Herkesin Anlayacağı Dil)
 
-## 1. Dikkat (Attention) ve Odak (Focus) Karşılaştırması
-* **Reels:** Seviye (ort. Attention/Focus + fark) · Yapı (1 tepe veya SD notu)
-* **Metin:** Seviye · Yapı (kararlılık / sapma — 1 örnek)
+## 1. Katılımcı Hakkında
+* Yaş, meslek ve diğer bilgilerin dikkat–odak sonucuna etkisi (2–4 kısa madde)
 
-## 2. Zihinsel Yorgunluk (Mental Fatigue) ve Stres
-* **Mental Fatigue:** Reels vs Metin farkı + yenilik etkisi (1 cümle)
-* **Stress:** Anlık uyarılma farkı (1 cümle, gerekirse 1 tepe)
+## 2. Beyinde Ne Olmuş Olabilir? (Basit Anlatım)
+* **Reels:** Dikkat ve odak nasıl görünüyor? Neden böyle olabilir? (sayılarla)
+* **Metin:** Dikkat ve odak nasıl görünüyor? Neden böyle olabilir? (sayılarla)
+* **Fark:** Hangisinde beyin daha “dışarıdan gelen uyaranlara”, hangisinde daha “kendi çabasıyla” çalışmış gibi?
 
-## 3. Beyin Dalgası Bandı Analizi (Theta, Alpha, Beta)
-* **Beta (β):** Kısa yorum (sayıyla)
-* **Theta (θ) / θ/β:** Kısa yorum (sayıyla)
+## 3. Bu Ne Anlama Gelebilir? (Olası Riskler — Tanı Değil)
+Herkesin anlayacağı dille, gözlenen tabloya göre ileride zorlanılabilecek noktalar:
+* Dikkatini yönetme
+* Odaklanmayı sürdürme
+* Yorgunluk ve stres dengesi
+* Sosyal medya vs okuma farkına özgü uyarılar
 
-## 📊 Özet Karşılaştırma Tablosu
-Tam 5 satır (sadece sayılar):
+## 4. Dikkat ve Odak Karşılaştırması
+* **Reels:** Dikkat ve odak seviyesi · dalgalanma (varsa 1 örnek)
+* **Metin:** Dikkat ve odak seviyesi · kararlılık (varsa 1 örnek)
+* **Net cevap:** Bu oturumda hangisinde odak/dikkat daha iyi / daha sürdürülebilir?
+
+## 📊 Sayılarla Özet
+Tam 5 satır:
 
 | Metrik | Reels İzleme | Metin Okuma |
 |--------|--------------|-------------|
-| Attention | ... | ... |
-| Focus | ... | ... |
-| Mental Fatigue | ... | ... |
-| Stress | ... | ... |
-| Theta/Beta (θ/β) | ... | ... |
+| Dikkat (Attention) | ... | ... |
+| Odak (Focus) | ... | ... |
+| Zihinsel Yorgunluk | ... | ... |
+| Stres | ... | ... |
+| Theta/Beta | ... | ... |
 
-## 💡 Sonuç ve Yorum
-**Dijital Uyarılma Paradoksu** — tam **2 kısa madde** (her biri 1 cümle).
+## 💡 Sonuç (Herkes İçin)
+**2–3 kısa madde:** Sosyal medya mı, metin mi daha odaklı? Katılımcı bilgisiyle birleşik, sade özet.
 
 ---
-*Bu analiz tek oturum verisine dayanmaktadır; tıbbi veya klinik tanı amacı taşımaz.*
+*Bu analiz tek oturum EEG verisine dayanmaktadır; tıbbi veya klinik tanı amacı taşımaz.*
 """
 
 
 USER_PROMPT_TEMPLATE = """\
-Aşağıdaki EEG oturum verisini SYSTEM şablonuna göre **kısa** Markdown rapor olarak analiz et.
+Aşağıdaki EEG oturum verisini SYSTEM şablonuna göre Markdown rapor olarak analiz et.
 
-Kurallar:
-- Toplam ~250–400 kelime; madde başına 1–2 cümle.
-- Sayısal Reels–Metin farkları + en fazla 1–2 tepe/çukur örneği.
-- "Sınırlı fark var" deme; uzun paragraf yazma.
+Önemli:
+- Değerlendirmeyi uzman doktor gibi yap.
+- Sonuç metnini **tıbbi bilgisi olmayan biri** de anlayacak sade Türkçe ile yaz.
+- Jargon kullanma; bilimsel fikri günlük dilde anlat.
+- Sıra: (1) basit beyin/dikkat açıklaması (2) olası riskler (tanı değil) \
+(3) Reels vs metin odak/dikkat karşılaştırması.
+
+Katılımcı demografisini (yaş, meslek vb.) yorumda kullan.
 
 ## Oturum meta
 - experimentId: {experiment_id}
@@ -80,10 +109,13 @@ Kurallar:
 - dataInsufficient: {data_insufficient}
 - dataInsufficientReason: {data_insufficient_reason}
 
-## Reels aşaması (dışsal görsel-işitsel uyaran)
+## Katılımcı profili
+{participant_block}
+
+## Reels aşaması (sosyal medya — dışsal görsel-işitsel uyaran)
 {reels_block}
 
-## Metin okuma aşaması (içsel zihinsel efor)
+## Metin okuma aşaması (içsel zihinsel efor — sürdürülebilir dikkat)
 {text_block}
 
 ## Dakika bazlı zaman serileri
@@ -101,7 +133,7 @@ Kurallar:
 ## Ek notlar
 {notes}
 
-Şimdi SYSTEM başlıklarıyla **kısa** Markdown raporu üret.
+Şimdi SYSTEM başlıklarıyla, herkesin anlayacağı sade Markdown raporu üret.
 """
 
 
@@ -183,6 +215,34 @@ def _series_block(series: dict[str, list[float]] | None) -> str:
     return "\n".join(parts)
 
 
+def _participant_block(participant: dict[str, Any] | None) -> str:
+    if not participant:
+        return "(Katılımcı profili gönderilmedi)"
+
+    vision = participant.get("visionProblem")
+    if vision is True:
+        vision_s = "Var"
+    elif vision is False:
+        vision_s = "Yok"
+    else:
+        vision_s = "N/A"
+
+    lines = [
+        f"- Kod: {participant.get('participantCode') or 'N/A'}",
+        f"- Yaş: {participant.get('age') if participant.get('age') not in (None, '') else 'N/A'}",
+        f"- Cinsiyet: {participant.get('gender') or 'N/A'}",
+        f"- Eğitim: {participant.get('education') or 'N/A'}",
+        f"- Meslek: {participant.get('occupation') or 'N/A'}",
+        f"- Günlük sosyal medya kullanımı: "
+        f"{participant.get('dailySocialMediaUsage') or 'N/A'}",
+        f"- Dominant el: {participant.get('dominantHand') or 'N/A'}",
+        f"- Görme sorunu: {vision_s}",
+        f"- Uyku süresi: {participant.get('sleepDuration') or 'N/A'}",
+        f"- Notlar: {participant.get('notes') or '—'}",
+    ]
+    return "\n".join(lines)
+
+
 def _compact_payload_json(payload: dict[str, Any]) -> str:
     """Prompt içine gömülen kompakt JSON (okunabilir, aşırı uzun değil)."""
     import json
@@ -192,6 +252,7 @@ def _compact_payload_json(payload: dict[str, Any]) -> str:
         "participantId": payload.get("participantId"),
         "analysisVersion": payload.get("analysisVersion"),
         "dataInsufficient": payload.get("dataInsufficient"),
+        "participant": payload.get("participant") or {},
         "reels": payload.get("reels") or {},
         "text": payload.get("text") or {},
         "reelsMinuteSeries": payload.get("reelsMinuteSeries"),
@@ -207,6 +268,7 @@ def build_user_prompt(payload: dict[str, Any]) -> str:
     Beklenen payload alanları (SessionAnalysisRequest ile uyumlu):
       experimentId, participantId, analysisVersion,
       dataInsufficient, dataInsufficientReason, notes,
+      participant: { age, gender, education, occupation, ... },
       reels: PhaseMetrics dict,
       text: PhaseMetrics dict,
       reelsMinuteSeries / textMinuteSeries: {
@@ -228,6 +290,7 @@ def build_user_prompt(payload: dict[str, Any]) -> str:
         analysis_version=payload.get("analysisVersion", "N/A"),
         data_insufficient=payload.get("dataInsufficient", False),
         data_insufficient_reason=payload.get("dataInsufficientReason") or "—",
+        participant_block=_participant_block(payload.get("participant")),
         reels_block=_phase_block(payload.get("reels") or {}, "Reels"),
         text_block=_phase_block(payload.get("text") or {}, "Metin"),
         reels_series_block=_series_block(payload.get("reelsMinuteSeries")),

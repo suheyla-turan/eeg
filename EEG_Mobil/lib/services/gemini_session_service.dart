@@ -1,5 +1,7 @@
 import '../core/app_logger.dart';
 import '../models/experiment_result.dart';
+import '../models/participant.dart';
+import '../repositories/participant_repository.dart';
 import '../repositories/result_repository.dart';
 import 'eeg_api_service.dart';
 
@@ -8,23 +10,33 @@ class GeminiSessionService {
   GeminiSessionService({
     required EegApiService api,
     required ResultRepository results,
+    ParticipantRepository? participants,
   })  : _api = api,
-        _results = results;
+        _results = results,
+        _participants = participants;
 
   final EegApiService _api;
   final ResultRepository _results;
+  final ParticipantRepository? _participants;
 
   /// Zaten Gemini yorumu varsa dokunmaz; yoksa üretir ve kaydeder.
   ///
   /// Başarısız olursa [existing] döner; hata metni [lastError]'a yazılır.
   String? lastError;
 
-  Future<ExperimentResult> ensureInterpretation(ExperimentResult existing) async {
+  Future<ExperimentResult> ensureInterpretation(
+    ExperimentResult existing, {
+    Participant? participant,
+  }) async {
     lastError = null;
     if (existing.hasGeminiInterpretation) return existing;
 
     try {
-      final response = await _api.analyzeSession(buildPayload(existing));
+      final profile = participant ??
+          await _resolveParticipant(existing.participantId);
+      final response = await _api.analyzeSession(
+        buildPayload(existing, participant: profile),
+      );
       if (!response.ok || response.markdown.trim().isEmpty) {
         lastError = response.error?.trim().isNotEmpty == true
             ? response.error
@@ -58,21 +70,52 @@ class GeminiSessionService {
     }
   }
 
+  Future<Participant?> _resolveParticipant(String participantId) async {
+    if (participantId.isEmpty) return null;
+    final repo = _participants;
+    if (repo == null) return null;
+    try {
+      return await repo.getById(participantId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// API [SessionAnalysisRequest] gövdesi.
-  static Map<String, dynamic> buildPayload(ExperimentResult result) {
+  static Map<String, dynamic> buildPayload(
+    ExperimentResult result, {
+    Participant? participant,
+  }) {
     return {
       'experimentId': result.experimentId,
       'participantId': result.participantId,
       'analysisVersion': result.analysisVersion,
       'dataInsufficient': result.dataInsufficient,
       'dataInsufficientReason': result.dataInsufficientReason,
+      if (participant != null) 'participant': participantToProfileMap(participant),
       'reels': result.reels.toMap(),
       'text': result.text.toMap(),
       'attentionSeries': result.attentionSeries,
       'focusSeries': result.focusSeries,
       'stressSeries': result.stressSeries,
       'engagementSeries': result.engagementSeries,
-      'maxOutputTokens': 4096,
+      'maxOutputTokens': 6144,
+    };
+  }
+
+  /// Gemini'ye giden demografik alanlar (isim gönderilmez).
+  static Map<String, dynamic> participantToProfileMap(Participant p) {
+    return {
+      'participantCode': p.participantCode,
+      'age': p.age,
+      'gender': p.gender,
+      'education': p.education,
+      'occupation': p.occupation,
+      'dailySocialMediaUsage': p.dailySocialMediaUsage,
+      'dominantHand': p.dominantHand,
+      'visionProblem': p.visionProblem,
+      'sleepDuration': p.sleepDuration,
+      'notes': p.notes,
     };
   }
 }

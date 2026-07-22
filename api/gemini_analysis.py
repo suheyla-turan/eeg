@@ -58,6 +58,21 @@ class MinuteSeriesIn(BaseModel):
     thetaBeta: list[float] = Field(default_factory=list)
 
 
+class ParticipantProfileIn(BaseModel):
+    """Katılımcı demografisi — Flutter Participant ile uyumlu (isim hariç)."""
+
+    participantCode: str = ""
+    age: int | None = None
+    gender: str = ""
+    education: str = ""
+    occupation: str = ""
+    dailySocialMediaUsage: str = ""
+    dominantHand: str = ""
+    visionProblem: bool | None = None
+    sleepDuration: str = ""
+    notes: str = ""
+
+
 class SessionAnalysisRequest(BaseModel):
     """Gemini analiz isteği gövdesi."""
 
@@ -67,6 +82,8 @@ class SessionAnalysisRequest(BaseModel):
     dataInsufficient: bool = False
     dataInsufficientReason: str = ""
     notes: str = ""
+
+    participant: ParticipantProfileIn | None = None
 
     reels: PhaseMetricsIn = Field(default_factory=PhaseMetricsIn)
     text: PhaseMetricsIn = Field(default_factory=PhaseMetricsIn)
@@ -82,8 +99,8 @@ class SessionAnalysisRequest(BaseModel):
 
     model: str | None = None  # örn. gemini-3.6-flash; boşsa config varsayılanı
     temperature: float = 0.4
-    # Düşünme modellerinde thinking tokenleri de buradan düşer; kısa rapor için bile yüksek tut.
-    maxOutputTokens: int = 4096
+    # Düşünme modellerinde thinking tokenleri de buradan düşer; tıbbi rapor için yüksek tut.
+    maxOutputTokens: int = 6144
 
 
 class SessionAnalysisResponse(BaseModel):
@@ -197,6 +214,7 @@ def _request_to_prompt_payload(req: SessionAnalysisRequest) -> dict[str, Any]:
         "dataInsufficient": req.dataInsufficient,
         "dataInsufficientReason": req.dataInsufficientReason,
         "notes": req.notes,
+        "participant": req.participant.model_dump() if req.participant else None,
         "reels": req.reels.model_dump(),
         "text": req.text.model_dump(),
         "reelsMinuteSeries": reels_ms,

@@ -66,7 +66,11 @@ class AppDependencies {
     final storage = FirebaseEegStorageRepository();
     final api = EegApiService();
     final eeg = EegService(api: api);
-    final gemini = GeminiSessionService(api: api, results: results);
+    final gemini = GeminiSessionService(
+      api: api,
+      results: results,
+      participants: participants,
+    );
     final session = ExperimentSessionService(
       participantRepository: participants,
       experimentRepository: experiments,

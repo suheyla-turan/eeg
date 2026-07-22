@@ -439,7 +439,10 @@ class ExperimentSessionService {
     // PC API açıksa Gemini yorumunu üret ve kaydet (başarısız olursa kural tabanlı kalır).
     final gemini = _gemini;
     if (gemini != null && !cancelled) {
-      result = await gemini.ensureInterpretation(result);
+      result = await gemini.ensureInterpretation(
+        result,
+        participant: participant,
+      );
     }
 
     final status = cancelled

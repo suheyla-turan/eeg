@@ -67,7 +67,10 @@ class _ParticipantHistoryScreenState extends State<ParticipantHistoryScreen> {
 
     ExperimentResult? result;
     try {
-      result = await deps.resultReanalyzer.ensureCurrentForExperiment(exp);
+      result = await deps.resultReanalyzer.ensureCurrentForExperiment(
+        exp,
+        participant: widget.participant,
+      );
     } finally {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
     }
