@@ -1,0 +1,6 @@
+API hazýr. Cortex'e otomatik baðlanýlýyor (cihaz durumu / DEV stream).
+mDNS yayýnda: http://eegserver.local:8000  (192.168.68.51)
+  servis: eegserver._eeg-api._tcp.local.
+Cortex API'ye baðlanýlýyor...
+Cortex arka plan baðlantýsý baþlatýldý (otomatik yeniden baðlanma aktif).
+mDNS yayýný durduruldu.

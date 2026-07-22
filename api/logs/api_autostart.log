@@ -1,0 +1,488 @@
+﻿2026-07-20 15:14:20  API already running (health OK).
+2026-07-20 16:59:05  API already running (health OK).
+2026-07-20 16:59:13  API already running (health OK).
+2026-07-21 13:16:13  Starting API: C:\Users\msi\AppData\Local\Microsoft\WindowsApps\python.exe C:\Users\msi\Desktop\eeg\api\api_server.py
+2026-07-21 13:16:19  API ready (PID 17816).
+2026-07-21 13:48:28  Starting API: C:\Users\msi\AppData\Local\Microsoft\WindowsApps\python.exe C:\Users\msi\Desktop\eeg\api\api_server.py
+2026-07-21 13:48:31  API ready (PID 10228).
+2026-07-21 13:51:43  API already running (health OK).
+2026-07-21 13:51:44  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 13:52:54  API already running (health OK).
+2026-07-21 13:52:54  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 13:53:05  API already running (health OK).
+2026-07-21 13:53:06  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 13:55:08  API already running (health OK).
+2026-07-21 13:55:09  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 13:57:10  API already running (health OK).
+2026-07-21 13:57:10  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 13:59:12  API already running (health OK).
+2026-07-21 13:59:12  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:01:14  API already running (health OK).
+2026-07-21 14:01:14  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:03:16  API already running (health OK).
+2026-07-21 14:03:16  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:05:18  API already running (health OK).
+2026-07-21 14:05:18  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:07:20  API already running (health OK).
+2026-07-21 14:07:20  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:09:21  API already running (health OK).
+2026-07-21 14:09:21  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:11:22  API already running (health OK).
+2026-07-21 14:11:22  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:13:23  API already running (health OK).
+2026-07-21 14:13:23  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:15:24  API already running (health OK).
+2026-07-21 14:15:24  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:17:25  API already running (health OK).
+2026-07-21 14:17:25  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:19:26  API already running (health OK).
+2026-07-21 14:19:26  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:21:27  API already running (health OK).
+2026-07-21 14:21:27  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:23:28  API already running (health OK).
+2026-07-21 14:23:28  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:25:29  API already running (health OK).
+2026-07-21 14:25:29  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:27:30  API already running (health OK).
+2026-07-21 14:27:30  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:29:31  API already running (health OK).
+2026-07-21 14:29:31  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:31:32  API already running (health OK).
+2026-07-21 14:31:32  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:33:33  API already running (health OK).
+2026-07-21 14:33:33  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:35:34  API already running (health OK).
+2026-07-21 14:35:34  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:37:34  API already running (health OK).
+2026-07-21 14:37:34  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:39:35  API already running (health OK).
+2026-07-21 14:39:35  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:41:35  API already running (health OK).
+2026-07-21 14:41:35  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:43:35  API already running (health OK).
+2026-07-21 14:43:35  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:45:36  API already running (health OK).
+2026-07-21 14:45:36  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:47:36  API already running (health OK).
+2026-07-21 14:47:36  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:49:36  API already running (health OK).
+2026-07-21 14:49:36  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:51:37  API already running (health OK).
+2026-07-21 14:51:37  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:53:37  API already running (health OK).
+2026-07-21 14:53:37  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:55:37  API already running (health OK).
+2026-07-21 14:55:38  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:57:38  API already running (health OK).
+2026-07-21 14:57:38  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 14:59:38  API already running (health OK).
+2026-07-21 14:59:38  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:01:39  API already running (health OK).
+2026-07-21 15:01:39  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:03:39  API already running (health OK).
+2026-07-21 15:03:39  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:05:39  API already running (health OK).
+2026-07-21 15:05:39  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:07:40  API already running (health OK).
+2026-07-21 15:07:40  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:09:40  API already running (health OK).
+2026-07-21 15:09:40  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:11:40  API already running (health OK).
+2026-07-21 15:11:41  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:13:41  API already running (health OK).
+2026-07-21 15:13:41  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:15:41  API already running (health OK).
+2026-07-21 15:15:41  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:17:42  API already running (health OK).
+2026-07-21 15:17:42  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:19:42  API already running (health OK).
+2026-07-21 15:19:42  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:21:42  API already running (health OK).
+2026-07-21 15:21:42  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:23:43  API already running (health OK).
+2026-07-21 15:23:43  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:25:43  API already running (health OK).
+2026-07-21 15:25:43  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:27:43  API already running (health OK).
+2026-07-21 15:27:43  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:29:44  API already running (health OK).
+2026-07-21 15:29:44  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:31:44  API already running (health OK).
+2026-07-21 15:31:44  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:33:44  API already running (health OK).
+2026-07-21 15:33:44  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:35:45  API already running (health OK).
+2026-07-21 15:35:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:37:45  API already running (health OK).
+2026-07-21 15:37:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:39:45  API already running (health OK).
+2026-07-21 15:39:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:41:46  API already running (health OK).
+2026-07-21 15:41:46  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:43:46  API already running (health OK).
+2026-07-21 15:43:46  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:45:46  API already running (health OK).
+2026-07-21 15:45:46  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:47:47  API already running (health OK).
+2026-07-21 15:47:47  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:49:47  API already running (health OK).
+2026-07-21 15:49:47  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:51:47  API already running (health OK).
+2026-07-21 15:51:47  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:53:48  API already running (health OK).
+2026-07-21 15:53:48  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:55:49  API already running (health OK).
+2026-07-21 15:55:49  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:57:50  API already running (health OK).
+2026-07-21 15:57:50  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 15:59:50  API already running (health OK).
+2026-07-21 15:59:50  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:01:51  API already running (health OK).
+2026-07-21 16:01:51  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:03:51  API already running (health OK).
+2026-07-21 16:03:51  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:05:52  API already running (health OK).
+2026-07-21 16:05:52  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:07:52  API already running (health OK).
+2026-07-21 16:07:52  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:09:53  API already running (health OK).
+2026-07-21 16:09:53  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:11:53  API already running (health OK).
+2026-07-21 16:11:53  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:13:54  API already running (health OK).
+2026-07-21 16:13:54  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:15:54  API already running (health OK).
+2026-07-21 16:15:54  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:17:54  API already running (health OK).
+2026-07-21 16:17:55  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:19:55  API already running (health OK).
+2026-07-21 16:19:55  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:21:55  API already running (health OK).
+2026-07-21 16:21:55  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:23:56  API already running (health OK).
+2026-07-21 16:23:56  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:25:56  API already running (health OK).
+2026-07-21 16:25:56  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:27:57  API already running (health OK).
+2026-07-21 16:27:57  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:29:57  API already running (health OK).
+2026-07-21 16:29:57  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:31:58  API already running (health OK).
+2026-07-21 16:31:58  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:33:58  API already running (health OK).
+2026-07-21 16:33:58  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:35:58  API already running (health OK).
+2026-07-21 16:35:59  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:37:59  API already running (health OK).
+2026-07-21 16:37:59  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:39:59  API already running (health OK).
+2026-07-21 16:39:59  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:42:00  API already running (health OK).
+2026-07-21 16:42:00  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:44:00  API already running (health OK).
+2026-07-21 16:44:00  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:46:01  API already running (health OK).
+2026-07-21 16:46:01  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:48:01  API already running (health OK).
+2026-07-21 16:48:01  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:50:02  API already running (health OK).
+2026-07-21 16:50:02  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:52:02  API already running (health OK).
+2026-07-21 16:52:02  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:54:03  API already running (health OK).
+2026-07-21 16:54:03  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:56:03  API already running (health OK).
+2026-07-21 16:56:03  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 16:58:04  API already running (health OK).
+2026-07-21 16:58:04  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:00:04  API already running (health OK).
+2026-07-21 17:00:05  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:02:05  API already running (health OK).
+2026-07-21 17:02:06  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:04:06  API already running (health OK).
+2026-07-21 17:04:07  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:06:07  API already running (health OK).
+2026-07-21 17:06:07  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:08:08  API already running (health OK).
+2026-07-21 17:08:08  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:10:09  API already running (health OK).
+2026-07-21 17:10:09  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:12:10  API already running (health OK).
+2026-07-21 17:12:10  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:14:11  API already running (health OK).
+2026-07-21 17:14:11  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:16:12  API already running (health OK).
+2026-07-21 17:16:13  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:18:14  API already running (health OK).
+2026-07-21 17:18:14  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:20:16  API already running (health OK).
+2026-07-21 17:20:16  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:22:17  API already running (health OK).
+2026-07-21 17:22:18  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:24:19  API already running (health OK).
+2026-07-21 17:24:19  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:26:21  API already running (health OK).
+2026-07-21 17:26:21  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:28:23  API already running (health OK).
+2026-07-21 17:28:23  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 17:30:24  API already running (health OK).
+2026-07-21 17:30:24  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-21 21:11:34  Starting API: C:\Users\msi\AppData\Local\Microsoft\WindowsApps\python.exe C:\Users\msi\Desktop\eeg\api\api_server.py
+2026-07-21 21:11:37  API ready (PID 17828).
+2026-07-21 21:13:40  API already running (health OK).
+2026-07-21 21:15:43  API already running (health OK).
+2026-07-21 21:17:45  API already running (health OK).
+2026-07-21 21:17:45  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:19:46  API already running (health OK).
+2026-07-21 21:19:46  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:21:46  API already running (health OK).
+2026-07-21 21:21:46  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:23:47  API already running (health OK).
+2026-07-21 21:23:47  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:25:47  API already running (health OK).
+2026-07-21 21:25:47  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:27:48  API already running (health OK).
+2026-07-21 21:27:48  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:29:48  API already running (health OK).
+2026-07-21 21:29:48  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:31:49  API already running (health OK).
+2026-07-21 21:31:49  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:33:49  API already running (health OK).
+2026-07-21 21:33:49  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:35:50  API already running (health OK).
+2026-07-21 21:35:50  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:37:50  API already running (health OK).
+2026-07-21 21:37:50  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:39:50  API already running (health OK).
+2026-07-21 21:39:50  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:41:51  API already running (health OK).
+2026-07-21 21:41:51  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:43:51  API already running (health OK).
+2026-07-21 21:43:51  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:45:52  API already running (health OK).
+2026-07-21 21:45:52  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:47:52  API already running (health OK).
+2026-07-21 21:47:52  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:49:53  API already running (health OK).
+2026-07-21 21:49:53  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:51:53  API already running (health OK).
+2026-07-21 21:51:53  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:53:53  API already running (health OK).
+2026-07-21 21:53:53  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:55:54  API already running (health OK).
+2026-07-21 21:55:54  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 21:57:58  Starting API: C:\Users\msi\AppData\Local\Microsoft\WindowsApps\python.exe C:\Users\msi\Desktop\eeg\api\api_server.py
+2026-07-21 21:58:02  API ready (PID 15376).
+2026-07-21 21:58:02  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:00:03  API already running (health OK).
+2026-07-21 22:00:03  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:02:03  API already running (health OK).
+2026-07-21 22:02:03  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:04:04  API already running (health OK).
+2026-07-21 22:04:04  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:06:05  API already running (health OK).
+2026-07-21 22:06:05  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:08:05  API already running (health OK).
+2026-07-21 22:08:05  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:10:05  API already running (health OK).
+2026-07-21 22:10:05  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:12:06  API already running (health OK).
+2026-07-21 22:12:06  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:14:08  API already running (health OK).
+2026-07-21 22:14:08  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:16:08  API already running (health OK).
+2026-07-21 22:16:08  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:18:09  API already running (health OK).
+2026-07-21 22:18:09  adb: bagli cihaz yok, reverse atlandi.
+2026-07-21 22:20:09  API already running (health OK).
+2026-07-21 22:20:09  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 12:44:03  Starting API: C:\Users\msi\AppData\Local\Microsoft\WindowsApps\python.exe C:\Users\msi\Desktop\eeg\api\api_server.py
+2026-07-22 12:44:09  API ready (PID 1956).
+2026-07-22 12:46:12  API already running (health OK).
+2026-07-22 12:48:15  API already running (health OK).
+2026-07-22 12:50:18  API already running (health OK).
+2026-07-22 12:52:21  API already running (health OK).
+2026-07-22 12:54:23  API already running (health OK).
+2026-07-22 12:56:26  API already running (health OK).
+2026-07-22 12:58:28  API already running (health OK).
+2026-07-22 13:00:32  API already running (health OK).
+2026-07-22 13:02:35  API already running (health OK).
+2026-07-22 13:02:35  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 13:04:36  API already running (health OK).
+2026-07-22 13:04:37  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 13:06:37  API already running (health OK).
+2026-07-22 13:06:37  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 13:08:38  API already running (health OK).
+2026-07-22 13:08:38  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 13:10:41  API already running (health OK).
+2026-07-22 13:10:41  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 13:12:42  API already running (health OK).
+2026-07-22 13:12:42  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:14:43  API already running (health OK).
+2026-07-22 13:14:43  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:16:43  API already running (health OK).
+2026-07-22 13:16:44  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:18:44  API already running (health OK).
+2026-07-22 13:18:44  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:20:44  API already running (health OK).
+2026-07-22 13:20:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:22:45  API already running (health OK).
+2026-07-22 13:22:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:24:45  API already running (health OK).
+2026-07-22 13:24:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:26:46  API already running (health OK).
+2026-07-22 13:26:46  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:28:46  API already running (health OK).
+2026-07-22 13:28:46  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:30:47  API already running (health OK).
+2026-07-22 13:30:47  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:32:47  API already running (health OK).
+2026-07-22 13:32:47  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:34:47  API already running (health OK).
+2026-07-22 13:34:47  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:36:50  API already running (health OK).
+2026-07-22 13:36:50  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:38:50  API already running (health OK).
+2026-07-22 13:38:51  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:40:51  API already running (health OK).
+2026-07-22 13:40:51  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:42:51  API already running (health OK).
+2026-07-22 13:42:52  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:44:52  API already running (health OK).
+2026-07-22 13:44:52  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:46:52  API already running (health OK).
+2026-07-22 13:46:53  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:48:53  API already running (health OK).
+2026-07-22 13:48:53  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:50:53  API already running (health OK).
+2026-07-22 13:50:53  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:52:54  API already running (health OK).
+2026-07-22 13:52:54  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:54:54  API already running (health OK).
+2026-07-22 13:54:55  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:56:55  API already running (health OK).
+2026-07-22 13:56:55  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 13:58:56  API already running (health OK).
+2026-07-22 13:58:56  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:00:57  API already running (health OK).
+2026-07-22 14:00:58  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:02:58  API already running (health OK).
+2026-07-22 14:02:59  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:05:00  API already running (health OK).
+2026-07-22 14:05:00  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:07:00  API already running (health OK).
+2026-07-22 14:07:00  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:09:01  API already running (health OK).
+2026-07-22 14:09:01  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:11:01  API already running (health OK).
+2026-07-22 14:11:01  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 14:13:02  API already running (health OK).
+2026-07-22 14:13:02  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 14:15:02  API already running (health OK).
+2026-07-22 14:15:02  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:17:02  API already running (health OK).
+2026-07-22 14:17:02  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:19:03  API already running (health OK).
+2026-07-22 14:19:03  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:21:03  API already running (health OK).
+2026-07-22 14:21:03  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:23:03  API already running (health OK).
+2026-07-22 14:23:03  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:25:04  API already running (health OK).
+2026-07-22 14:25:04  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:27:04  API already running (health OK).
+2026-07-22 14:27:04  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:29:04  API already running (health OK).
+2026-07-22 14:29:05  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:31:05  API already running (health OK).
+2026-07-22 14:31:05  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:33:05  API already running (health OK).
+2026-07-22 14:33:05  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:35:06  API already running (health OK).
+2026-07-22 14:35:06  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:37:06  API already running (health OK).
+2026-07-22 14:37:06  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:39:07  API already running (health OK).
+2026-07-22 14:39:07  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:41:07  API already running (health OK).
+2026-07-22 14:41:07  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:43:07  API already running (health OK).
+2026-07-22 14:43:08  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:45:08  API already running (health OK).
+2026-07-22 14:45:08  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:47:08  API already running (health OK).
+2026-07-22 14:47:08  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:49:09  API already running (health OK).
+2026-07-22 14:49:09  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:51:09  API already running (health OK).
+2026-07-22 14:51:09  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:53:09  API already running (health OK).
+2026-07-22 14:53:09  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:55:10  API already running (health OK).
+2026-07-22 14:55:10  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:57:10  API already running (health OK).
+2026-07-22 14:57:10  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 14:59:10  API already running (health OK).
+2026-07-22 14:59:10  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 15:01:11  API already running (health OK).
+2026-07-22 15:01:11  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 15:03:11  API already running (health OK).
+2026-07-22 15:03:11  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 15:05:12  API already running (health OK).
+2026-07-22 15:05:12  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 15:07:12  API already running (health OK).
+2026-07-22 15:07:12  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:17:40  API already running (health OK).
+2026-07-22 16:17:40  adb: bagli cihaz yok, reverse atlandi.
+2026-07-22 16:19:40  API already running (health OK).
+2026-07-22 16:19:40  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:21:41  API already running (health OK).
+2026-07-22 16:21:41  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:23:41  API already running (health OK).
+2026-07-22 16:23:41  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:25:42  API already running (health OK).
+2026-07-22 16:25:42  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:27:42  API already running (health OK).
+2026-07-22 16:27:42  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:29:43  API already running (health OK).
+2026-07-22 16:29:43  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:31:44  API already running (health OK).
+2026-07-22 16:31:44  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:33:45  API already running (health OK).
+2026-07-22 16:33:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:35:45  API already running (health OK).
+2026-07-22 16:35:45  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:37:46  API already running (health OK).
+2026-07-22 16:37:47  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:39:48  API already running (health OK).
+2026-07-22 16:39:48  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:41:49  API already running (health OK).
+2026-07-22 16:41:49  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:43:50  API already running (health OK).
+2026-07-22 16:43:51  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:45:52  API already running (health OK).
+2026-07-22 16:45:52  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:47:52  API already running (health OK).
+2026-07-22 16:47:52  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:49:53  API already running (health OK).
+2026-07-22 16:49:53  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:51:53  API already running (health OK).
+2026-07-22 16:51:53  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:53:54  API already running (health OK).
+2026-07-22 16:53:54  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:55:54  API already running (health OK).
+2026-07-22 16:55:54  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:57:55  API already running (health OK).
+2026-07-22 16:57:55  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 16:59:56  API already running (health OK).
+2026-07-22 16:59:56  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 17:01:56  API already running (health OK).
+2026-07-22 17:01:56  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 17:03:56  API already running (health OK).
+2026-07-22 17:03:57  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 17:05:57  API already running (health OK).
+2026-07-22 17:05:57  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 17:07:58  API already running (health OK).
+2026-07-22 17:07:58  adb reverse tcp:8000 ok (1 cihaz).
+2026-07-22 17:09:58  API already running (health OK).
+2026-07-22 17:09:58  adb reverse tcp:8000 ok (1 cihaz).
