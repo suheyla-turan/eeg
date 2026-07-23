@@ -58,6 +58,10 @@ class ExperimentManager extends ChangeNotifier {
   Experiment? experiment;
   ExperimentResult? lastResult;
   String? lastStoragePath;
+
+  /// Sonuç ekranı PDF'i için oturumdaki ham örnekler (Storage'sız).
+  List<Map<String, dynamic>> lastRawSamples = const [];
+
   int sampleCount = 0;
 
   List<VideoContent> videos = [];
@@ -92,6 +96,7 @@ class ExperimentManager extends ChangeNotifier {
     sampleCount = 0;
     lastResult = null;
     lastStoragePath = null;
+    lastRawSamples = const [];
 
     await _enableWakeLock();
     await loadMediaOptions();
@@ -113,6 +118,7 @@ class ExperimentManager extends ChangeNotifier {
     errorMessage = null;
     lastResult = null;
     lastStoragePath = null;
+    lastRawSamples = const [];
     sampleCount = restoredSampleCount;
 
     await _enableWakeLock();
@@ -366,6 +372,7 @@ class ExperimentManager extends ChangeNotifier {
       experiment = done.experiment;
       lastResult = done.result;
       lastStoragePath = done.storagePath;
+      lastRawSamples = List<Map<String, dynamic>>.from(_session.buffer.samples);
       sampleCount = _session.buffer.sampleCount;
       _stopEegTicker();
       await _disableWakeLock();
@@ -393,6 +400,7 @@ class ExperimentManager extends ChangeNotifier {
       experiment = done.experiment;
       lastResult = done.result;
       lastStoragePath = done.storagePath;
+      lastRawSamples = List<Map<String, dynamic>>.from(_session.buffer.samples);
       sampleCount = _session.buffer.sampleCount;
       _stopEegTicker();
       await _disableWakeLock();
@@ -453,6 +461,7 @@ class ExperimentManager extends ChangeNotifier {
     experiment = null;
     lastResult = null;
     lastStoragePath = null;
+    lastRawSamples = const [];
     sampleCount = 0;
     watchEvents = [];
     lastQuizResponse = null;

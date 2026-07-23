@@ -7,6 +7,7 @@ import '../../models/phase_metrics.dart';
 import '../../models/video_experiment_stats.dart';
 import '../../providers/experiment_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/eeg_pdf_download_button.dart';
 import '../../widgets/experiment_interpretation_section.dart';
 import '../../widgets/experiment_scaffold.dart';
 
@@ -117,7 +118,20 @@ class ExperimentResultsStepScreen extends StatelessWidget {
             const SizedBox(height: 14),
             ExperimentSummaryCard(result: result),
           ],
-          const SizedBox(height: 24),
+          if (result != null) ...[
+            const SizedBox(height: 16),
+            EegPdfDownloadButton(
+              result: result,
+              participant: participant,
+              experimentDate: experiment?.createdAt,
+              storagePath:
+                  experiment?.storagePath ?? provider.lastStoragePath,
+              localSamples: provider.lastRawSamples.isNotEmpty
+                  ? provider.lastRawSamples
+                  : null,
+            ),
+          ],
+          const SizedBox(height: 12),
           FilledButton(
             onPressed: onDone,
             style: FilledButton.styleFrom(

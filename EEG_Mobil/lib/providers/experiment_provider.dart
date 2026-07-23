@@ -55,6 +55,7 @@ class ExperimentProvider extends ChangeNotifier {
   Experiment? experiment;
   ExperimentResult? lastResult;
   String? lastStoragePath;
+  List<Map<String, dynamic>> lastRawSamples = const [];
   int sampleCount = 0;
 
   List<VideoContent> videos = [];
@@ -79,6 +80,9 @@ class ExperimentProvider extends ChangeNotifier {
     experiment = manager.experiment ?? experiment;
     lastResult = manager.lastResult ?? lastResult;
     lastStoragePath = manager.lastStoragePath ?? lastStoragePath;
+    if (manager.lastRawSamples.isNotEmpty) {
+      lastRawSamples = manager.lastRawSamples;
+    }
     sampleCount = manager.sampleCount;
     watchEvents = manager.watchEvents;
     videos = manager.videos;
@@ -339,6 +343,7 @@ class ExperimentProvider extends ChangeNotifier {
       experiment = done.experiment;
       lastResult = done.result;
       lastStoragePath = done.storagePath;
+      lastRawSamples = List<Map<String, dynamic>>.from(_session.buffer.samples);
       phase = ExperimentPhase.completed;
       notifyListeners();
       return true;
@@ -362,6 +367,7 @@ class ExperimentProvider extends ChangeNotifier {
       experiment = done.experiment;
       lastResult = done.result;
       lastStoragePath = done.storagePath;
+      lastRawSamples = List<Map<String, dynamic>>.from(_session.buffer.samples);
       phase = ExperimentPhase.cancelled;
       notifyListeners();
       return true;
@@ -381,6 +387,7 @@ class ExperimentProvider extends ChangeNotifier {
     experiment = null;
     lastResult = null;
     lastStoragePath = null;
+    lastRawSamples = const [];
     sampleCount = 0;
     readingPhase = false;
     watchEvents = [];

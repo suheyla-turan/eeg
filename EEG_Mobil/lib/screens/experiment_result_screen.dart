@@ -7,6 +7,7 @@ import '../models/experiment_result.dart';
 import '../models/participant.dart';
 import '../models/phase_metrics.dart';
 import '../theme/app_colors.dart';
+import '../widgets/eeg_pdf_download_button.dart';
 import '../widgets/experiment_interpretation_section.dart';
 import '../widgets/section_card.dart';
 
@@ -125,6 +126,13 @@ class ExperimentResultScreen extends StatelessWidget {
             child: ExperimentSummaryCard(result: result),
           ),
           const SizedBox(height: 8),
+          EegPdfDownloadButton(
+            result: result,
+            participant: participant,
+            experimentDate: experiment?.createdAt,
+            storagePath: experiment?.storagePath,
+          ),
+          const SizedBox(height: 12),
           FilledButton(
             onPressed: () {
               Navigator.of(context).popUntil((r) => r.isFirst);
